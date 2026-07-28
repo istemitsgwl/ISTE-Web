@@ -1,0 +1,238 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+ 
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+ 
+  --color-glow-1: var(--glow-1);
+  --color-glow-2: var(--glow-2);
+
+  --radius-lg: var(--radius-lg);
+  --radius-md: var(--radius-md);
+  --radius-sm: var(--radius-sm);
+
+  --font-sans: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --font-serif: "Instrument Serif", "Cormorant Garamond", Georgia, serif;
+}
+ 
+:root {
+  /* Premium Dark Theme - Light Violet & Engineering Blue */
+  --background: #07111F;
+  --foreground: #AAB3C2;               /* Body Text / Secondary: Slate-300 */
+  
+  --card: #101B2E;
+  --card-foreground: #F6F3EC;          /* Heading / Primary: Off-white */
+  --popover: #101B2E;
+  --popover-foreground: #F6F3EC;
+ 
+  --primary: #CF9FFF;                  /* Light Violet */
+  --primary-foreground: #07111F;
+  
+  --secondary: #4F8EF7;                /* Engineering Blue */
+  --secondary-foreground: #07111F;
+  
+  --muted: #101B2E;
+  --muted-foreground: #7E8A9B;         /* Muted Text */
+  
+  --accent: #CF9FFF;
+  --accent-foreground: #07111F;
+ 
+  --destructive: #F56B6B;              /* Error */
+  --destructive-foreground: #07111F;
+  --success: #52C78C;
+  --success-foreground: #07111F;
+  --warning: #E7B65C;
+  --warning-foreground: #07111F;
+  
+  --border: #21324C;
+  --input: #21324C;
+  --ring: #CF9FFF;
+ 
+  --radius-sm: 0.375rem;               /* 6px */
+  --radius-md: 0.75rem;                /* 12px */
+  --radius-lg: 1.5rem;                 /* 24px */
+  
+  --glass-bg: rgba(16, 27, 46, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 20px;
+  
+  /* Additional theme-specific variables */
+  --grid-color: rgba(207, 159, 255, 0.08); /* #CF9FFF Light Violet grid */
+  --shadow-card: 0 12px 40px -10px rgba(0, 0, 0, 0.6);
+  --glow-opacity: 0.15;
+  --primary-glow: rgba(207, 159, 255, 0.15);
+  --glow-1: rgba(207, 159, 255, 0.10);    /* Light Violet glow */
+  --glow-2: rgba(79, 142, 247, 0.08);    /* Engineering Blue glow */
+}
+
+.light {
+  /* Premium Light Theme - Warm Sand & Deep Violet */
+  --background: #F7F4EE;               /* Warm Sand background */
+  --foreground: #5E6775;               /* Body Text / Secondary text */
+  
+  --card: #FFFFFF;                     /* Cards background */
+  --card-foreground: #111827;          /* Heading / Primary text */
+  --popover: #FFFFFF;
+  --popover-foreground: #111827;
+
+  --primary: #7F00FF;                  /* Deep Violet for Light Theme */
+  --primary-foreground: #FFFFFF;
+  
+  --secondary: #4F8EF7;                /* Accent Blue */
+  --secondary-foreground: #FFFFFF;
+  
+  --muted: #FFFFFF;
+  --muted-foreground: #5E6775;
+  
+  --accent: #7F00FF;
+  --accent-foreground: #FFFFFF;
+ 
+  --destructive: #F56B6B;
+  --destructive-foreground: #FFFFFF;
+  --success: #52C78C;
+  --success-foreground: #FFFFFF;
+  --warning: #E7B65C;
+  --warning-foreground: #FFFFFF;
+  
+  --border: #D6DCE5;                   /* Borders */
+  --input: #D6DCE5;
+  --ring: #7F00FF;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.5rem;                 /* 24px */
+  
+  /* Navbar Frosted Glass settings */
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-blur: 20px;
+
+  /* Additional theme-specific variables */
+  --grid-color: rgba(127, 0, 255, 0.05);  /* Soft Deep Violet grid */
+  --shadow-card: 0 12px 35px rgba(25, 45, 80, 0.05);
+  --glow-opacity: 0.4;
+  --primary-glow: transparent;
+  --glow-1: rgba(127, 0, 255, 0.06);    /* Deep Violet glow */
+  --glow-2: rgba(79, 142, 247, 0.03);    /* Soft Accent Blue glow */
+  --footer-bg: #F2EFE8;
+}
+
+/* Base resets & standard font assignments */
+@layer base {
+  * {
+    @apply border-border outline-none;
+  }
+  body {
+    background: var(--background);
+    background-attachment: fixed;
+    @apply text-foreground antialiased selection:bg-primary selection:text-primary-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', 'Outfit', system-ui, sans-serif;
+    @apply font-extrabold text-card-foreground; /* Make all headings bold and use heading color token */
+  }
+  
+  a {
+    color: var(--secondary);
+    transition: color 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  a:hover {
+    color: var(--primary);
+  }
+  
+  /* Global smooth transition for theme change */
+  html, body, header, footer, main, .glass-panel, .card, select, input, textarea, button, p, span, h1, h2, h3, h4, h5, h6, a, svg {
+    transition: color 700ms cubic-bezier(0.4, 0, 0.2, 1), 
+                background-color 700ms cubic-bezier(0.4, 0, 0.2, 1), 
+                border-color 700ms cubic-bezier(0.4, 0, 0.2, 1), 
+                box-shadow 700ms cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 700ms cubic-bezier(0.4, 0, 0.2, 1),
+                transform 700ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Glassmorphism utility helpers */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+}
+
+.glass-card-hover {
+  transition: all 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-card);
+  border-radius: 24px;
+}
+
+.glass-card-hover:hover {
+  background: var(--card);
+  border-color: #E2EBF5;
+  box-shadow: 0 20px 50px rgba(25, 50, 80, 0.12);
+  transform: translateY(-10px) scale(1.02);
+}
+
+.dark .glass-card-hover:hover {
+  border-color: rgba(0, 229, 255, 0.3);
+  box-shadow: 0 20px 40px -15px rgba(0, 229, 255, 0.15);
+  transform: translateY(-2px) scale(1.0);
+}
+
+.grid-overlay {
+  background-image: 
+    linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+  background-size: 3.5rem 3.5rem;
+  mask-image: linear-gradient(to bottom, #000 75%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 75%, transparent 100%);
+}
+
+.radial-glow {
+  opacity: var(--glow-opacity);
+  transition: opacity 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bg-background {
+  background: var(--background) !important;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}

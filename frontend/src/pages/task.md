@@ -1,0 +1,13 @@
+- [x] Create Light/Dark Theme System (`ThemeContext.tsx`)
+- [x] Implement Tubelight Navbar component
+- [x] Integrate Navbar and Theme Toggle in header
+- [x] Create interactive Border Glow Card component
+- [x] Redesign Home page: Cinematic Hero & Circle Gallery
+- [x] Refactor About page with stats count animations
+- [x] Refactor Mentors page with glow cards & center alignment
+- [x] Refactor Team (student committee) page
+- [x] Refactor Events and Event Details pages with glow cards
+- [x] Refactor Gallery page using Masonry grid style
+- [x] Refactor FAQ & Contact views
+- [x] Redesign Login & Register views
+- [x] Verify build and responsive layouts
