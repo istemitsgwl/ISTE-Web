@@ -15,6 +15,7 @@ import { BlurText } from "@/components/animations/BlurText"
 import { DecryptedText } from "@/components/animations/DecryptedText"
 import { ScrollReveal } from "@/components/animations/ScrollReveal"
 import { sortEventsDescending } from "@/utils/eventSorter"
+import { resolveEventImage } from "@/utils/imageResolver"
 
 declare global {
   interface Window {
@@ -209,7 +210,7 @@ export default function Events() {
                   {/* Event Cover Image */}
                   <div
                     className="h-56 w-full bg-cover bg-center bg-no-repeat relative shrink-0"
-                    style={{ backgroundImage: `url(${event.bannerImage || event.image})` }}
+                    style={{ backgroundImage: `url(${resolveEventImage(event.bannerImage || event.image)})` }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
                     <span className={`absolute top-4 right-4 text-[10px] uppercase font-extrabold px-3 py-1.5 rounded-full ${

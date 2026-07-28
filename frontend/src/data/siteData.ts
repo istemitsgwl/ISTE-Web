@@ -2,8 +2,8 @@ import vishalImg from "../assets/mentors/vishal-chaudhary.jpg";
 import manjreeImg from "../assets/mentors/manjree-pandit.jpg";
 
 import Esummit from "../assets/Events/e-summit-iste.jpg";
-import Enigma from "../assets/Events/enigma-2025.jpg";
-import Xcalibre from "../assets/Events/xcalibire-23.jpg";
+import Enigma from "../assets/Events/enigma-2025.webp";
+import Xcalibre from "../assets/Events/xcalibire-23.webp";
 
 export const mentors = [
   {

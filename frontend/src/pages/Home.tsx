@@ -14,6 +14,7 @@ import { BlurText } from "@/components/animations/BlurText"
 import { DecryptedText } from "@/components/animations/DecryptedText"
 import { ScrollReveal } from "@/components/animations/ScrollReveal"
 import { sortEventsDescending } from "@/utils/eventSorter"
+import { resolveEventImage } from "@/utils/imageResolver"
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -319,7 +320,7 @@ export default function Home() {
             >
               <div
                 className="h-44 w-full bg-cover bg-center bg-no-repeat relative"
-                style={{ backgroundImage: `url(${event.bannerImage || event.image})` }}
+                style={{ backgroundImage: `url(${resolveEventImage(event.bannerImage || event.image)})` }}
               >
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
                 <span className={`absolute top-4 right-4 text-[9px] uppercase font-extrabold px-2.5 py-1 rounded-full ${
