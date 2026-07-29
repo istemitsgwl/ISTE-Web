@@ -161,7 +161,7 @@ export default function Home() {
 
       {/* WEBGL CIRCULAR GALLERY SHOWCASE */}
       <section className="relative w-full z-10 -mt-12 sm:-mt-16 mb-8">
-        <div className="relative w-full h-[400px] md:h-[500px]">
+        <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px]">
           {heroItems.length > 0 && (
             <CircularGallery
               items={heroItems}

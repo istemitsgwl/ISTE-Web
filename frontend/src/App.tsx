@@ -25,7 +25,7 @@ function App() {
       <BrowserRouter>
         <ScrollToTop />
         <Preloader />
-        <div className="flex flex-col min-h-screen bg-transparent text-foreground transition-all duration-700 selection:bg-primary selection:text-primary-foreground">
+        <div className="flex flex-col min-h-screen bg-transparent text-foreground transition-all duration-700 selection:bg-primary selection:text-primary-foreground overflow-x-hidden w-full">
           <Navbar />
           <main className="flex-1">
             <Routes>

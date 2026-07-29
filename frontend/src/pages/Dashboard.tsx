@@ -13,6 +13,7 @@ import { db } from "@/lib/firebase"
 import { collection, query, where, getDocs, doc, setDoc } from "firebase/firestore"
 import { events as staticEvents } from "@/data/siteData"
 import { sortEventsDescending } from "@/utils/eventSorter"
+import { resolveEventImage } from "@/utils/imageResolver"
 import fallbackImage from "@/assets/gallery/iste.jpg"
 
 export default function Dashboard() {
@@ -615,7 +616,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {upcomingEvents.slice(0, 3).map((ev) => (
                   <div key={ev.id} className="glass-panel rounded-2xl overflow-hidden border border-border/80 bg-card/40 dark:bg-slate-900/40 flex flex-col justify-between">
-                    <div className="h-40 w-full bg-cover bg-center relative" style={{ backgroundImage: `url(${ev.bannerImage || ev.image || fallbackImage})` }}>
+                    <div className="h-40 w-full bg-cover bg-center relative" style={{ backgroundImage: `url(${resolveEventImage(ev.bannerImage || ev.image) || fallbackImage})` }}>
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
                       <span className={`absolute top-3 right-3 text-[9px] font-extrabold uppercase px-2.5 py-1 rounded-full ${
                         ev.status === 'upcoming' ? 'bg-primary text-slate-950' : 'bg-muted text-muted-foreground border border-border'
@@ -631,11 +632,12 @@ export default function Dashboard() {
                       
                       <Button
                         onClick={() => navigate("/events")}
-                        variant="glow"
+                        variant={ev.status === 'completed' ? 'outline' : 'glow'}
                         size="sm"
                         className="w-full justify-center font-bold text-xs py-2.5"
+                        disabled={ev.status === 'completed'}
                       >
-                        Register Now
+                        {ev.status === 'completed' ? 'Completed' : 'Register Now'}
                       </Button>
                     </div>
                   </div>

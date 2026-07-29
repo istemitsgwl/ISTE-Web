@@ -3,7 +3,10 @@ import { useAuthStore } from "@/store/authStore"
 import { useTheme } from "@/context/ThemeContext"
 import { Button } from "./ui/Button"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from "./ui/DropdownMenu"
-import { Menu, User, LogOut, LayoutDashboard, Shield, Sun, Moon } from "lucide-react"
+import { 
+  Menu, User, LogOut, LayoutDashboard, Shield, Sun, Moon,
+  Home as HomeIcon, Info, GraduationCap, Users, Calendar, Image as ImageIcon, HelpCircle, Mail 
+} from "lucide-react"
 import { useState } from "react"
 import { Sheet, SheetContent, SheetTrigger } from "./ui/Sheet"
 import { motion } from "framer-motion"
@@ -18,14 +21,14 @@ export default function Navbar() {
   const [open, setOpen] = useState(false)
 
   const navLinks = [
-    { name: "Home", path: "/" },
-    { name: "About", path: "/about" },
-    { name: "Mentors", path: "/mentors" },
-    { name: "Team", path: "/team" },
-    { name: "Events", path: "/events" },
-    { name: "Gallery", path: "/gallery" },
-    { name: "FAQs", path: "/faqs" },
-    { name: "Contact", path: "/contact" },
+    { name: "Home", path: "/", icon: HomeIcon },
+    { name: "About", path: "/about", icon: Info },
+    { name: "Mentors", path: "/mentors", icon: GraduationCap },
+    { name: "Team", path: "/team", icon: Users },
+    { name: "Events", path: "/events", icon: Calendar },
+    { name: "Gallery", path: "/gallery", icon: ImageIcon },
+    { name: "FAQs", path: "/faqs", icon: HelpCircle },
+    { name: "Contact", path: "/contact", icon: Mail },
   ]
 
   const handleLogout = () => {
@@ -34,7 +37,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className="fixed top-4 left-0 right-0 z-50 px-4 sm:px-8 md:px-12 lg:px-16 w-full flex items-center justify-between pointer-events-none">
+    <header className="fixed top-4 inset-x-0 z-50 px-4 sm:px-8 md:px-12 lg:px-16 flex items-center justify-between pointer-events-none">
       
       {/* LEFT: Unboxed Premium Organization Branding (Scaled down 20-25%) */}
       <div className="flex items-center shrink-0 pointer-events-auto">
@@ -47,7 +50,7 @@ export default function Navbar() {
             <img 
               src={theme === "dark" ? isteStandaloneLogo : isteStandaloneLogoLight} 
               alt="ISTE Logo" 
-              className="h-10 w-10 sm:h-12 sm:w-12 object-contain" 
+              className="h-12 w-12 sm:h-14 sm:w-14 object-contain" 
             />
           </div>
 
@@ -62,7 +65,7 @@ export default function Navbar() {
             </span>
 
             {/* Indian Society For Technical Education */}
-            <span className="text-[10.5px] sm:text-[11.5px] md:text-[12px] font-medium text-[#F4F0FF] dark:text-[#F4F0FF] [.light_&]:text-[#111827] leading-[1.15] mt-0.5 whitespace-nowrap transition-colors duration-300">
+            <span className="hidden sm:block text-[10.5px] sm:text-[11.5px] md:text-[12px] font-medium text-[#F4F0FF] dark:text-[#F4F0FF] [.light_&]:text-[#111827] leading-[1.15] mt-0.5 whitespace-nowrap transition-colors duration-300">
               Indian Society<br />For Technical Education
             </span>
           </div>
@@ -181,44 +184,77 @@ export default function Navbar() {
               <Menu className="h-5 w-5 text-foreground" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="flex flex-col gap-6 pt-12 bg-background border-l border-border/40">
-            <nav className="flex flex-col gap-4">
+          <SheetContent 
+            side="right" 
+            className="flex flex-col gap-6 pt-16 bg-slate-950/90 dark:bg-slate-950/90 [.light_&]:bg-white/90 backdrop-blur-2xl border-l border-border/40 w-72 sm:w-80 shadow-2xl"
+          >
+            {/* Header info inside mobile menu */}
+            <div className="flex flex-col gap-1 mb-2">
+              <span className="text-[10px] uppercase tracking-[0.2em] font-extrabold text-primary">
+                Navigation Menu
+              </span>
+              <h3 className="text-sm font-black text-muted-foreground">ISTE Students' Chapter</h3>
+            </div>
+
+            {/* Nav list */}
+            <nav className="flex flex-col gap-2.5">
               {navLinks.map((link) => {
                 const isActive = location.pathname === link.path
+                const Icon = link.icon
                 return (
                   <Link
                     key={link.path}
                     to={link.path}
                     onClick={() => setOpen(false)}
-                    className={`text-base font-bold uppercase tracking-wider transition-colors ${
-                      isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                    className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all duration-300 border ${
+                      isActive
+                        ? "bg-primary/10 text-primary border-primary/20 shadow-[0_0_15px_rgba(0,243,255,0.06)]"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/30 border-transparent"
                     }`}
                   >
-                    {link.name}
+                    <Icon className={`w-4 h-4 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                    <span>{link.name}</span>
                   </Link>
                 )
               })}
             </nav>
-            <div className="mt-auto flex flex-col gap-4">
+
+            <div className="mt-auto flex flex-col gap-3 pt-6 border-t border-border/40">
               {isAuthenticated && user ? (
                 <>
-                  <Button onClick={() => { setOpen(false); navigate("/dashboard/profile"); }} variant="outline" className="w-full justify-start gap-2 rounded-xl font-bold">
+                  <Button 
+                    onClick={() => { setOpen(false); navigate("/dashboard/profile"); }} 
+                    variant="outline" 
+                    className="w-full justify-start gap-3 rounded-2xl font-bold py-3.5 text-xs uppercase tracking-wider"
+                  >
                     <LayoutDashboard className="h-4 w-4 text-primary" />
                     <span>Dashboard</span>
                   </Button>
                   {user.role === "admin" && (
-                    <Button onClick={() => { setOpen(false); navigate("/admin/dashboard"); }} variant="outline" className="w-full justify-start gap-2 border-secondary/30 rounded-xl font-bold">
+                    <Button 
+                      onClick={() => { setOpen(false); navigate("/admin/dashboard"); }} 
+                      variant="outline" 
+                      className="w-full justify-start gap-3 border-secondary/30 rounded-2xl font-bold py-3.5 text-xs uppercase tracking-wider"
+                    >
                       <Shield className="h-4 w-4 text-secondary" />
                       <span>Admin Panel</span>
                     </Button>
                   )}
-                  <Button onClick={() => { setOpen(false); handleLogout(); }} variant="destructive" className="w-full justify-start gap-2 rounded-xl font-bold">
+                  <Button 
+                    onClick={() => { setOpen(false); handleLogout(); }} 
+                    variant="destructive" 
+                    className="w-full justify-start gap-3 rounded-2xl font-bold py-3.5 text-xs uppercase tracking-wider"
+                  >
                     <LogOut className="h-4 w-4" />
                     <span>Logout</span>
                   </Button>
                 </>
               ) : (
-                <Button onClick={() => { setOpen(false); navigate("/login"); }} variant="glow" className="w-full rounded-xl font-bold">
+                <Button 
+                  onClick={() => { setOpen(false); navigate("/login"); }} 
+                  variant="glow" 
+                  className="w-full rounded-2xl font-bold py-4 text-xs uppercase tracking-wider justify-center"
+                >
                   Login / Join
                 </Button>
               )}
