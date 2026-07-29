@@ -121,9 +121,15 @@ export default function Gallery() {
 
         {/* Gallery Grid */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-sm font-semibold text-muted-foreground">Loading visual gallery...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {Array.from({ length: 8 }).map((_, idx) => (
+              <div 
+                key={idx} 
+                className="p-2 bg-card/20 rounded-[24px] border border-border/10 shadow-sm aspect-[4/3] animate-pulse"
+              >
+                <div className="w-full h-full rounded-[16px] bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 relative overflow-hidden" />
+              </div>
+            ))}
           </div>
         ) : filteredItems.length === 0 ? (
           <motion.div

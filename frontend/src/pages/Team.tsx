@@ -111,9 +111,17 @@ export default function Team() {
 
         {/* Committees Layout */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-sm font-semibold text-muted-foreground">Loading steering team...</p>
+          <div className="flex flex-wrap justify-center gap-6">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="w-full sm:w-[260px] md:w-[265px] p-6 bg-card/20 border border-border/10 rounded-[24px] animate-pulse flex flex-col items-center"
+              >
+                <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 mb-4" />
+                <div className="h-4 w-32 bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 rounded-md mb-2" />
+                <div className="h-3 w-24 bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 rounded-md" />
+              </div>
+            ))}
           </div>
         ) : committees.length === 0 ? (
           <motion.div

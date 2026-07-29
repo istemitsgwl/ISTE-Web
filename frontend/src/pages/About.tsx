@@ -58,7 +58,7 @@ export default function About() {
           </div>
           <h1 className="flex flex-col items-center gap-1 sm:gap-2 tracking-tight leading-[1.05] mt-2">
             <SplitText 
-              text="Madhav Institute of" 
+              text="Indian Society for" 
               type="words" 
               className="text-[2.2rem] sm:text-[4rem] md:text-[5rem] font-light font-serif text-card-foreground dark:text-white" 
             />
