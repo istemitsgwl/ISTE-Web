@@ -15,3 +15,11 @@ export const resolveEventImage = (imagePath: string | undefined): string => {
   
   return imagePath;
 }
+
+export const optimizeCloudinaryUrl = (url: string | undefined, transformations: string = "q_auto,f_auto"): string => {
+  if (!url) return "";
+  if (url.includes("res.cloudinary.com") && url.includes("/image/upload/")) {
+    return url.replace("/image/upload/", `/image/upload/${transformations}/`);
+  }
+  return url;
+};

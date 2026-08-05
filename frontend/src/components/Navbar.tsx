@@ -5,7 +5,7 @@ import { Button } from "./ui/Button"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from "./ui/DropdownMenu"
 import { 
   Menu, User, LogOut, LayoutDashboard, Shield, Sun, Moon,
-  Home as HomeIcon, Info, GraduationCap, Users, Calendar, Image as ImageIcon, HelpCircle, Mail 
+  Home as HomeIcon, Info, GraduationCap, Users, Code2, Calendar, Image as ImageIcon, HelpCircle, Mail 
 } from "lucide-react"
 import { useState } from "react"
 import { Sheet, SheetContent, SheetTrigger } from "./ui/Sheet"
@@ -141,39 +141,18 @@ export default function Navbar() {
         </button>
 
         {/* Auth Button / Dropdown */}
-        <div className="hidden md:block">
-          {isAuthenticated && user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 border-primary/30 rounded-full font-bold bg-[rgba(16,27,46,0.55)] dark:bg-[rgba(16,27,46,0.55)] [.light_&]:bg-[rgba(255,255,255,0.65)] backdrop-blur-[20px]">
-                  <User className="h-4 w-4 text-primary" />
-                  <span>{user.name}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="rounded-2xl border-border bg-popover/90 backdrop-blur-md">
-                <DropdownMenuLabel className="font-bold">My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/dashboard/profile")} className="cursor-pointer font-semibold rounded-xl">
-                  <LayoutDashboard className="mr-2 h-4 w-4 text-primary" />
-                  <span>Dashboard</span>
-                </DropdownMenuItem>
-                {user.role === "admin" && (
-                  <DropdownMenuItem onClick={() => navigate("/admin/dashboard")} className="cursor-pointer font-semibold rounded-xl">
-                    <Shield className="mr-2 h-4 w-4 text-secondary" />
-                    <span>Admin Panel</span>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive hover:bg-destructive/10 cursor-pointer font-semibold rounded-xl">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Logout</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button onClick={() => navigate("/login")} variant="glow" size="sm" className="rounded-full font-bold">
-              Login
-            </Button>
+        <div className="hidden md:flex items-center gap-2">
+          {isAuthenticated && user && (user.role === "super_admin" || user.role === "admin") && (
+            <>
+              <Button onClick={() => navigate("/admin/dashboard")} variant="outline" size="sm" className="gap-2 border-primary/30 rounded-full font-bold bg-[rgba(16,27,46,0.55)] dark:bg-[rgba(16,27,46,0.55)] [.light_&]:bg-[rgba(255,255,255,0.65)] backdrop-blur-[20px]">
+                <Shield className="h-4 w-4 text-primary" />
+                <span>Admin Panel</span>
+              </Button>
+              <Button onClick={handleLogout} variant="destructive" size="sm" className="gap-2 rounded-full font-bold cursor-pointer">
+                <LogOut className="h-4 w-4" />
+                <span>Log Out</span>
+              </Button>
+            </>
           )}
         </div>
 
@@ -219,46 +198,26 @@ export default function Navbar() {
               })}
             </nav>
 
-            <div className="mt-auto flex flex-col gap-3 pt-6 border-t border-border/40">
-              {isAuthenticated && user ? (
-                <>
-                  <Button 
-                    onClick={() => { setOpen(false); navigate("/dashboard/profile"); }} 
-                    variant="outline" 
-                    className="w-full justify-start gap-3 rounded-2xl font-bold py-3.5 text-xs uppercase tracking-wider"
-                  >
-                    <LayoutDashboard className="h-4 w-4 text-primary" />
-                    <span>Dashboard</span>
-                  </Button>
-                  {user.role === "admin" && (
-                    <Button 
-                      onClick={() => { setOpen(false); navigate("/admin/dashboard"); }} 
-                      variant="outline" 
-                      className="w-full justify-start gap-3 border-secondary/30 rounded-2xl font-bold py-3.5 text-xs uppercase tracking-wider"
-                    >
-                      <Shield className="h-4 w-4 text-secondary" />
-                      <span>Admin Panel</span>
-                    </Button>
-                  )}
-                  <Button 
-                    onClick={() => { setOpen(false); handleLogout(); }} 
-                    variant="destructive" 
-                    className="w-full justify-start gap-3 rounded-2xl font-bold py-3.5 text-xs uppercase tracking-wider"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
-                  </Button>
-                </>
-              ) : (
+            {isAuthenticated && user && (user.role === "super_admin" || user.role === "admin") && (
+              <div className="mt-auto flex flex-col gap-3 pt-6 border-t border-border/40">
                 <Button 
-                  onClick={() => { setOpen(false); navigate("/login"); }} 
-                  variant="glow" 
-                  className="w-full rounded-2xl font-bold py-4 text-xs uppercase tracking-wider justify-center"
+                  onClick={() => { setOpen(false); navigate("/admin/dashboard"); }} 
+                  variant="outline" 
+                  className="w-full justify-start gap-3 border-secondary/30 rounded-2xl font-bold py-3.5 text-xs uppercase tracking-wider"
                 >
-                  Login / Join
+                  <Shield className="h-4 w-4 text-secondary" />
+                  <span>Admin Panel</span>
                 </Button>
-              )}
-            </div>
+                <Button 
+                  onClick={() => { setOpen(false); handleLogout(); }} 
+                  variant="destructive" 
+                  className="w-full justify-start gap-3 rounded-2xl font-bold py-3.5 text-xs uppercase tracking-wider"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </Button>
+              </div>
+            )}
           </SheetContent>
         </Sheet>
       </div>

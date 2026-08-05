@@ -5,9 +5,6 @@ import os
 # Add parent path to import app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Configure emulator environment variable before importing app modules to avoid DNS lookup timeouts
-os.environ["FIRESTORE_EMULATOR_HOST"] = "127.0.0.1:8080"
-
 from app.main import app
 
 client = TestClient(app)

@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { motion } from "framer-motion"
-import { Mail, Phone, MapPin, Send, Sparkles } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Mail, Phone, MapPin, Send, Sparkles, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { BorderGlowCard } from "@/components/ui/BorderGlowCard"
@@ -17,15 +17,77 @@ export default function Contact() {
     message: "",
   })
   const [sending, setSending] = useState(false)
+  const [feedback, setFeedback] = useState<{ type: "success" | "error" | null; text: string }>({
+    type: null,
+    text: "",
+  })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = () => {
+    if (formData.name.trim().length < 2) return "Please enter your full name (at least 2 characters)."
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email.trim())) return "Please enter a valid email address."
+    if (formData.subject.trim().length < 3) return "Please enter a subject (at least 3 characters)."
+    if (formData.message.trim().length < 5) return "Please write a message (at least 5 characters)."
+    return null
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (sending) return
+
+    const validationError = validateForm()
+    if (validationError) {
+      setFeedback({ type: "error", text: validationError })
+      return
+    }
+
     setSending(true)
-    setTimeout(() => {
+    setFeedback({ type: null, text: "" })
+
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
+
+    try {
+      const res = await fetch(`${apiBase}/contact`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          subject: formData.subject.trim(),
+          message: formData.message.trim(),
+        }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+
+      if (res.status === 201 || res.ok) {
+        setFeedback({
+          type: "success",
+          text: data.message || "Your message has been sent successfully! Our team will get back to you shortly.",
+        })
+        setFormData({ name: "", email: "", subject: "", message: "" })
+      } else if (res.status === 429) {
+        setFeedback({
+          type: "error",
+          text: data.detail || "Too many message submissions. Please wait 1 minute before trying again.",
+        })
+      } else {
+        setFeedback({
+          type: "error",
+          text: data.detail || "Failed to send message. Please check your network connection and try again.",
+        })
+      }
+    } catch (err) {
+      console.error("Contact submit error:", err)
+      setFeedback({
+        type: "error",
+        text: "Network error occurred while submitting. Please try again.",
+      })
+    } finally {
       setSending(false)
-      alert("Your query has been submitted successfully. We will get back to you shortly.")
-      setFormData({ name: "", email: "", subject: "", message: "" })
-    }, 1200)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -88,10 +150,12 @@ export default function Contact() {
               <Phone className="w-6 h-6 text-secondary" />
             </div>
             <h3 className="text-lg font-bold mb-2">Call Contacts</h3>
-            <p className="text-xs text-muted-foreground font-medium">Public Relations & Queries</p>
-            <div className="text-xs sm:text-sm text-muted-foreground mt-6 flex flex-col gap-1.5 font-bold">
-              <p><span className="text-foreground font-semibold">Faizan Mansuri:</span> 7697827864</p>
-              <p><span className="text-foreground font-semibold">Prerna Pandey:</span> 6260842973</p>
+            <p className="text-xs text-muted-foreground font-medium">Public Relations & Technical Lead</p>
+            <div className="text-xs sm:text-sm text-muted-foreground mt-6 flex flex-col gap-1 items-center">
+              <span className="text-foreground font-extrabold text-xs sm:text-sm">Shivam Patidar</span>
+              <a href="tel:9302077780" className="text-primary hover:underline text-xs sm:text-sm font-black">
+                +91 9302077780
+              </a>
             </div>
           </BorderGlowCard>
 
@@ -133,9 +197,31 @@ export default function Contact() {
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <AnimatePresence>
+                {feedback.text && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                    className={`p-4 rounded-xl text-xs font-semibold flex items-start gap-3 border ${
+                      feedback.type === "success"
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                        : "bg-destructive/10 border-destructive/30 text-destructive"
+                    }`}
+                  >
+                    {feedback.type === "success" ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                    )}
+                    <span className="leading-relaxed">{feedback.text}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase">Your Name</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">Your Name *</label>
                   <Input
                     required
                     type="text"
@@ -143,12 +229,14 @@ export default function Contact() {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Enter name"
+                    disabled={sending}
+                    aria-label="Your Name"
                     className="bg-background border-border/80 py-5 rounded-xl text-xs sm:text-sm"
                   />
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase">Your Email</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">Your Email *</label>
                   <Input
                     required
                     type="email"
@@ -156,13 +244,15 @@ export default function Contact() {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="Enter email"
+                    disabled={sending}
+                    aria-label="Your Email"
                     className="bg-background border-border/80 py-5 rounded-xl text-xs sm:text-sm"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Subject</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Subject *</label>
                 <Input
                   required
                   type="text"
@@ -170,20 +260,24 @@ export default function Contact() {
                   value={formData.subject}
                   onChange={handleChange}
                   placeholder="Enter subject"
+                  disabled={sending}
+                  aria-label="Subject"
                   className="bg-background border-border/80 py-5 rounded-xl text-xs sm:text-sm"
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Message</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Message *</label>
                 <textarea
                   required
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
                   placeholder="Write your message here..."
+                  disabled={sending}
+                  aria-label="Message"
                   rows={4}
-                  className="w-full rounded-xl bg-background border border-border px-4 py-3 text-sm text-foreground focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-muted-foreground/60 transition-all outline-none resize-none"
+                  className="w-full rounded-xl bg-background border border-border px-4 py-3 text-sm text-foreground focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-muted-foreground/60 transition-all outline-none resize-none disabled:opacity-60"
                 />
               </div>
 
@@ -193,8 +287,17 @@ export default function Contact() {
                 className="mt-2 py-5 text-xs sm:text-sm font-extrabold justify-center gap-2 rounded-xl"
                 variant="glow"
               >
-                <Send className="w-4 h-4" />
-                {sending ? "Sending..." : "Send Message"}
+                {sending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Transmitting Message...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Send Message</span>
+                  </>
+                )}
               </Button>
             </form>
           </BorderGlowCard>

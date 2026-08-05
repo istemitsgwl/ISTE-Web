@@ -27,12 +27,12 @@ export function GlareHover({
   const [hasPlayed, setHasPlayed] = useState(false)
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (window.innerWidth < 768) return
     if (!containerRef.current) return
     if (playOnce && hasPlayed) return
 
-    const rect = containerRef.current.getBoundingClientRect()
-    const x = ((e.clientX - rect.left) / rect.width) * 100
-    const y = ((e.clientY - rect.top) / rect.height) * 100
+    const x = (e.nativeEvent.offsetX / (containerRef.current.clientWidth || 1)) * 100
+    const y = (e.nativeEvent.offsetY / (containerRef.current.clientHeight || 1)) * 100
 
     setGlarePos({ x, y })
   }

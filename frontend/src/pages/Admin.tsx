@@ -8,19 +8,20 @@ import {
   Shield, Users, Calendar, Wallet, FileText, 
   Settings, Plus, Trash2, HelpCircle, Download, Image as ImageIcon,
   Search, RefreshCw, Zap, ExternalLink, CheckCircle2, AlertCircle,
-  Activity, Database, Filter, Edit, Layers, ArrowUpRight, ArrowRight, Clock
+  Activity, Database, Filter, Edit, Layers, ArrowUpRight, ArrowRight, Clock, UserPlus, UserCheck, UserX, LogOut, Loader2, Mail, Eye, X
 } from "lucide-react"
-import { db, storage } from "@/lib/firebase"
-import { collection, doc, getDocs, setDoc, deleteDoc, query, where } from "firebase/firestore"
-import { ref, deleteObject } from "firebase/storage"
-import { mentors as staticMentors } from "@/data/siteData"
-import fallbackImage from "@/assets/gallery/iste.jpg"
+import fallbackImage from "@/assets/iste-circular-logo.png"
 import { sortEventsDescending } from "@/utils/eventSorter"
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuthStore()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<"overview" | "events" | "gallery" | "team" | "faqs" | "registrations">("overview")
+  const [activeTab, setActiveTab] = useState<"overview" | "events" | "gallery" | "team" | "registrations" | "admins" | "messages">("overview")
+
+  const getAuthHeaders = (): HeadersInit => {
+    const token = localStorage.getItem("iste_admin_jwt_token")
+    return token ? { Authorization: `Bearer ${token}` } : {}
+  }
 
   // State for database records
   const [localEvents, setLocalEvents] = useState<any[]>([])
@@ -28,8 +29,18 @@ export default function Admin() {
   const [dbRegistrations, setDbRegistrations] = useState<any[]>([])
   const [galleryItems, setGalleryItems] = useState<any[]>([])
   const [teamItems, setTeamItems] = useState<any[]>([])
+  const [localMentors, setLocalMentors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [seeding, setSeeding] = useState(false)
+
+  // Contact Messages CMS States
+  const [contactMessages, setContactMessages] = useState<any[]>([])
+  const [contactStats, setContactStats] = useState({ total: 0, unread: 0, read: 0 })
+  const [contactSearch, setContactSearch] = useState("")
+  const [contactStatusFilter, setContactStatusFilter] = useState("All")
+  const [contactPage, setContactPage] = useState(1)
+  const [contactLoading, setContactLoading] = useState(false)
+  const [selectedContactMessage, setSelectedContactMessage] = useState<any | null>(null)
 
   // Search & Filter States
   const [eventSearch, setEventSearch] = useState("")
@@ -44,7 +55,7 @@ export default function Admin() {
 
   // Audit Log State
   const [activityLogs, setActivityLogs] = useState<Array<{ id: string; action: string; category: string; timestamp: string }>>([
-    { id: "log-1", action: "Cloud Firestore Session Synchronized", category: "System", timestamp: "Just now" },
+    { id: "log-1", action: "MongoDB Atlas Session Synchronized", category: "System", timestamp: "Just now" },
     { id: "log-2", action: "Admin Privileges Authenticated", category: "Auth", timestamp: "1 min ago" }
   ])
 
@@ -70,9 +81,6 @@ export default function Admin() {
   const [eventBannerFile, setEventBannerFile] = useState<File | null>(null)
   const [eventBannerUploading, setEventBannerUploading] = useState(false)
 
-  // Form States for FAQs
-  const [newFaq, setNewFaq] = useState({ question: "", answer: "" })
-  const [editingFaqId, setEditingFaqId] = useState<string | null>(null)
 
   // Form States for Gallery
   const [galleryUploading, setGalleryUploading] = useState(false)
@@ -99,78 +107,306 @@ export default function Admin() {
   const [memberSuccess, setMemberSuccess] = useState("")
   const [editingMember, setEditingMember] = useState<any | null>(null)
 
+  // Form/Roster States for Admins Management (Super Admin only)
+  const [adminsList, setAdminsList] = useState<any[]>([])
+  const [adminsLoading, setAdminsLoading] = useState(false)
+  const [adminsError, setAdminsError] = useState("")
+  const [adminSearch, setAdminSearch] = useState("")
+  const [adminRoleFilter, setAdminRoleFilter] = useState("all")
+  const [adminStatusFilter, setAdminStatusFilter] = useState("all")
+  const [adminCurrentPage, setAdminCurrentPage] = useState(1)
+  const adminPageSize = 5
+
+  // Dialog/Modal States
+  const [isAddAdminOpen, setIsAddAdminOpen] = useState(false)
+  const [newAdminEmail, setNewAdminEmail] = useState("")
+  const [newAdminName, setNewAdminName] = useState("")
+  const [newAdminRole, setNewAdminRole] = useState("admin")
+  const [adminActionLoading, setAdminActionLoading] = useState(false)
+  const [adminActionError, setAdminActionError] = useState("")
+
+  const fetchAdmins = async () => {
+    if (!user || user.role !== "super_admin") return
+    setAdminsLoading(true)
+    setAdminsError("")
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
+    const savedToken = localStorage.getItem("iste_admin_jwt_token")
+    try {
+      const res = await fetch(`${apiBase}/v1/admins`, {
+        headers: {
+          "Authorization": `Bearer ${savedToken}`
+        }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setAdminsList(data)
+      } else {
+        const errData = await res.json().catch(() => ({}))
+        setAdminsError(errData.detail || "Failed to load administrative roster.")
+      }
+    } catch (err) {
+      setAdminsError("Network error. Unable to sync administrative workspace.")
+    } finally {
+      setAdminsLoading(false)
+    }
+  }
+
+  const handleAddAdmin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newAdminEmail.trim() || !newAdminName.trim()) {
+      setAdminActionError("Please fill in all required fields.")
+      return
+    }
+    setAdminActionLoading(true)
+    setAdminActionError("")
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
+    const savedToken = localStorage.getItem("iste_admin_jwt_token")
+    try {
+      const res = await fetch(`${apiBase}/v1/admins`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${savedToken}`
+        },
+        body: JSON.stringify({
+          email: newAdminEmail.trim(),
+          name: newAdminName.trim(),
+          role: newAdminRole
+        })
+      })
+      if (res.ok) {
+        setNewAdminEmail("")
+        setNewAdminName("")
+        setNewAdminRole("admin")
+        setIsAddAdminOpen(false)
+        logAction("Enrolled new Admin account", "Auth")
+        await fetchAdmins()
+      } else {
+        const errData = await res.json().catch(() => ({}))
+        setAdminActionError(errData.detail || "Failed to create Admin account.")
+      }
+    } catch (err) {
+      setAdminActionError("Network error. Contact system administrator.")
+    } finally {
+      setAdminActionLoading(false)
+    }
+  }
+
+  const handleToggleAdminStatus = async (adminId: string, currentStatus: string) => {
+    const nextStatus = currentStatus === "active" ? "disabled" : "active"
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
+    const savedToken = localStorage.getItem("iste_admin_jwt_token")
+    
+    // Optimistic UI Update
+    setAdminsList(prev => prev.map(a => a.id === adminId ? { ...a, status: nextStatus } : a))
+
+    try {
+      const res = await fetch(`${apiBase}/v1/admins/${adminId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${savedToken}`
+        },
+        body: JSON.stringify({ status: nextStatus })
+      })
+      if (!res.ok) {
+        // Rollback
+        setAdminsList(prev => prev.map(a => a.id === adminId ? { ...a, status: currentStatus } : a))
+        const errData = await res.json().catch(() => ({}))
+        alert(errData.detail || "Failed to update admin status.")
+      } else {
+        logAction(`Updated status for Admin (${adminId}) to ${nextStatus}`, "Auth")
+      }
+    } catch (err) {
+      // Rollback
+      setAdminsList(prev => prev.map(a => a.id === adminId ? { ...a, status: currentStatus } : a))
+      alert("Network error. Status toggle failed.")
+    }
+  }
+
+  const handleToggleAdminRole = async (adminId: string, currentRole: string) => {
+    const nextRole = currentRole === "super_admin" ? "admin" : "super_admin"
+    const actionLabel = nextRole === "super_admin" ? "promote to Super Admin" : "demote to Admin"
+    if (!window.confirm(`Are you sure you want to ${actionLabel} this user?`)) return
+
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
+    const savedToken = localStorage.getItem("iste_admin_jwt_token")
+
+    try {
+      const res = await fetch(`${apiBase}/v1/admins/${adminId}/role`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${savedToken}`
+        },
+        body: JSON.stringify({ role: nextRole })
+      })
+      if (res.ok) {
+        logAction(`Changed role for Admin (${adminId}) to ${nextRole}`, "Auth")
+        await fetchAdmins()
+      } else {
+        const errData = await res.json().catch(() => ({}))
+        alert(errData.detail || "Failed to update admin role.")
+      }
+    } catch (err) {
+      alert("Network error. Role update failed.")
+    }
+  }
+
+  const handleDeleteAdmin = async (adminId: string, email: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete admin account "${email}"? This action cannot be undone.`)) return
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
+    const savedToken = localStorage.getItem("iste_admin_jwt_token")
+
+    try {
+      const res = await fetch(`${apiBase}/v1/admins/${adminId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${savedToken}`
+        }
+      })
+      if (res.ok) {
+        logAction(`Deleted Admin account: ${email}`, "Auth")
+        await fetchAdmins()
+      } else {
+        const errData = await res.json().catch(() => ({}))
+        alert(errData.detail || "Failed to delete admin account.")
+      }
+    } catch (err) {
+      alert("Network error. Deletion failed.")
+    }
+  }
+
+  // Trigger admins list fetch if activeTab becomes "admins"
+  useEffect(() => {
+    if (activeTab === "admins" && user?.role === "super_admin") {
+      fetchAdmins()
+    }
+  }, [activeTab, user])
+
   // Fetch data on load
   const refreshAdminData = async () => {
     setLoading(true)
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
     try {
-      // 1. Fetch events from Firestore
-      const eventSnap = await getDocs(collection(db, "events"))
-      const evList: any[] = []
-      eventSnap.forEach((docSnap) => {
-        evList.push({ id: docSnap.id, ...docSnap.data() })
-      })
-      setLocalEvents(sortEventsDescending(evList))
-
-      // 2. Fetch FAQs from Firestore
-      const faqSnap = await getDocs(collection(db, "faqs"))
-      const fList: any[] = []
-      faqSnap.forEach((docSnap) => {
-        fList.push({ id: docSnap.id, ...docSnap.data() })
-      })
-      setLocalFaqs(fList)
-
-      // 3. Fetch registrations from Firestore
-      const regSnap = await getDocs(collection(db, "eventRegistrations"))
-      const rList: any[] = []
-      regSnap.forEach((docSnap) => {
-        rList.push({ id: docSnap.id, ...docSnap.data() })
-      })
-      setDbRegistrations(rList)
-
-      // 4. Fetch gallery items from Firestore
-      const gallerySnap = await getDocs(collection(db, "gallery"))
-      const gList: any[] = []
-      gallerySnap.forEach((docSnap) => {
-        const item = docSnap.data()
-        if (item && item.image) {
-          gList.push({ id: docSnap.id, ...item })
-        }
-      })
-      setGalleryItems(gList)
-
-      // 5. Fetch team items from Firestore
-      const teamSnap = await getDocs(collection(db, "team"))
-      const tList: any[] = []
-      teamSnap.forEach((docSnap) => {
-        const item = docSnap.data()
-        if (item) {
-          tList.push({ id: docSnap.id, ...item })
-        }
-      })
-
-      const uniqueTeamMap = new Map<string, any>()
-
-      if (tList.length > 0) {
-        tList.forEach((m) => {
-          const normKey = (m.name || m.id).toLowerCase().trim()
-          if (normKey && !uniqueTeamMap.has(normKey)) {
-            uniqueTeamMap.set(normKey, m)
-          }
-        })
-        setTeamItems(Array.from(uniqueTeamMap.values()))
-      } else {
-        setTeamItems([])
+      // 1. Fetch events from REST API
+      const evRes = await fetch(`${apiBase}/events`)
+      if (evRes.ok) {
+        const evList = await evRes.json()
+        setLocalEvents(sortEventsDescending(evList))
       }
+
+      // 2. Fetch FAQs from REST API
+      const faqRes = await fetch(`${apiBase}/content/faqs`)
+      if (faqRes.ok) {
+        const fList = await faqRes.json()
+        setLocalFaqs(fList)
+      }
+
+      // 3. Fetch gallery items from REST API
+      const galleryRes = await fetch(`${apiBase}/content/gallery`)
+      if (galleryRes.ok) {
+        const gList = await galleryRes.json()
+        setGalleryItems(gList)
+      }
+
+      // 4. Fetch team items from REST API
+      const teamRes = await fetch(`${apiBase}/content/team`)
+      if (teamRes.ok) {
+        const teamData = await teamRes.json()
+        setTeamItems(teamData)
+      } else {
+        const fallbackRes = await fetch(`${apiBase}/content/committees`)
+        if (fallbackRes.ok) {
+          const grouped = await fallbackRes.json()
+          const flatTeam: any[] = []
+          grouped.forEach((group: any) => {
+            if (group.members) flatTeam.push(...group.members)
+          })
+          setTeamItems(flatTeam)
+        }
+      }
+
+      // 5. Fetch mentors from REST API
+      const mentorRes = await fetch(`${apiBase}/content/mentors`)
+      if (mentorRes.ok) {
+        const mList = await mentorRes.json()
+        setLocalMentors(mList)
+      }
+      await refreshContactMessages()
     } catch (err) {
-      console.error("Error loading admin records from Firestore:", err)
+      console.error("Failed to load admin data:", err)
     } finally {
       setLoading(false)
     }
   }
 
+  const refreshContactMessages = async () => {
+    setContactLoading(true)
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
+    try {
+      const url = `${apiBase}/admin/contact?search=${encodeURIComponent(contactSearch)}&status=${encodeURIComponent(contactStatusFilter)}&page=${contactPage}&limit=50`
+      const res = await fetch(url, { headers: { ...getAuthHeaders() } })
+      if (res.ok) {
+        const data = await res.json()
+        setContactMessages(data.messages || [])
+        setContactStats({
+          total: data.total || 0,
+          unread: data.unread || 0,
+          read: data.read || 0,
+        })
+      }
+    } catch (err) {
+      console.warn("Failed to fetch contact messages:", err)
+    } finally {
+      setContactLoading(false)
+    }
+  }
+
+  const handleToggleReadStatus = async (id: string, currentStatus: string) => {
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
+    const targetStatus = currentStatus === "Unread" ? "read" : "unread"
+    try {
+      const res = await fetch(`${apiBase}/admin/contact/${id}/read?status=${targetStatus}`, {
+        method: "PATCH",
+        headers: { ...getAuthHeaders() }
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        if (selectedContactMessage?.id === id) {
+          setSelectedContactMessage(updated)
+        }
+        await refreshContactMessages()
+      }
+    } catch (err) {
+      console.error("Failed to update message read status:", err)
+    }
+  }
+
+  const handleDeleteContactMessage = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this contact message?")) return
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
+    try {
+      const res = await fetch(`${apiBase}/admin/contact/${id}`, {
+        method: "DELETE",
+        headers: { ...getAuthHeaders() }
+      })
+      if (res.ok) {
+        if (selectedContactMessage?.id === id) setSelectedContactMessage(null)
+        await refreshContactMessages()
+      }
+    } catch (err) {
+      console.error("Failed to delete contact message:", err)
+    }
+  }
+
   useEffect(() => {
-    refreshAdminData()
-  }, [user])
+    if (!authLoading && (!user || (user.role !== "super_admin" && user.role !== "admin"))) {
+      navigate("/patidar/admin")
+    } else {
+      refreshAdminData()
+    }
+  }, [user, authLoading, navigate])
 
   // Convert and compress file to base64 string
   const fileToBase64 = (file: File): Promise<string> => {
@@ -249,26 +485,32 @@ export default function Admin() {
         createdAt: editingEventId ? undefined : new Date().toISOString(),
       }
 
-      await setDoc(doc(db, "events", eventId), eventData, { merge: true })
-      
-      if (editingEventId) {
-        const updated = localEvents.map(ev => ev.id === editingEventId ? { ...ev, ...eventData } : ev)
-        setLocalEvents(sortEventsDescending(updated))
-        logAction(`Updated event: ${newEvent.title}`, "Events")
-        alert("Event updated successfully!")
-      } else {
-        const updated = [eventData, ...localEvents]
-        setLocalEvents(sortEventsDescending(updated))
-        logAction(`Created new event: ${newEvent.title}`, "Events")
-        alert("Event created successfully!")
+      const apiBase = import.meta.env.VITE_API_URL || "/api"
+      const url = editingEventId ? `${apiBase}/events/${editingEventId}` : `${apiBase}/events`
+      const method = editingEventId ? "PUT" : "POST"
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify(eventData)
+      })
+
+      if (!res.ok) {
+        throw new Error("Failed to save event via REST API")
       }
+
+      await refreshAdminData()
+      alert(editingEventId ? "Event updated successfully!" : "Event created successfully!")
 
       setNewEvent({ title: "", category: "Technical Fest", date: "", venue: "", desc: "", status: "upcoming", bannerImage: "" })
       setEditingEventId(null)
       setEventBannerFile(null)
     } catch (err) {
-      console.error("Failed to save event to Firestore:", err)
-      alert("Failed to save event to Firestore.")
+      console.error("Failed to save event:", err)
+      alert("Failed to save event.")
     } finally {
       setEventBannerUploading(false)
     }
@@ -291,9 +533,18 @@ export default function Admin() {
 
   const handleDeleteEvent = async (id: string, title: string) => {
     if (!confirm(`Are you sure you want to delete "${title}"?`)) return
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
     try {
-      await deleteDoc(doc(db, "events", id))
-      setLocalEvents(localEvents.filter(ev => ev.id !== id))
+      const res = await fetch(`${apiBase}/events/${id}`, {
+        method: "DELETE",
+        headers: {
+          ...getAuthHeaders()
+        }
+      })
+      if (!res.ok) {
+        throw new Error("Failed to delete event")
+      }
+      await refreshAdminData()
       logAction(`Deleted event: ${title}`, "Events")
     } catch (err) {
       console.error(err)
@@ -317,83 +568,67 @@ export default function Admin() {
       setGalleryError("Please enter an image title.")
       return
     }
-    if (!editingGalleryItem && galleryInputMode === "file" && !galleryFile) {
-      setGalleryError("Please select an image file.")
-      return
-    }
-    if (!editingGalleryItem && galleryInputMode === "url" && !galleryUrlInput.trim()) {
-      setGalleryError("Please enter an image URL.")
-      return
-    }
 
     setGalleryError("")
     setGallerySuccess("")
     setGalleryUploading(true)
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
 
     try {
-      let imageData = editingGalleryItem ? editingGalleryItem.image : ""
-      let storagePath = editingGalleryItem ? (editingGalleryItem.storagePath || "") : ""
+      const formData = new FormData()
+      formData.append("title", newGalleryTitle.trim())
+      formData.append("category", newGalleryCategory)
 
-      if (galleryInputMode === "url" && galleryUrlInput.trim()) {
-        imageData = galleryUrlInput.trim()
-        storagePath = ""
-      } else if (galleryFile) {
-        imageData = await fileToBase64(galleryFile)
-        storagePath = ""
+      if (galleryInputMode === "file" && galleryFile) {
+        formData.append("file", galleryFile)
+      } else if (galleryUrlInput.trim()) {
+        formData.append("imageUrl", galleryUrlInput.trim())
       }
 
-      const galleryDocId = editingGalleryItem ? editingGalleryItem.id : `gallery-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
-      const newItem = {
-        id: galleryDocId,
-        title: newGalleryTitle.trim(),
-        category: newGalleryCategory,
-        image: imageData,
-        storagePath,
-        createdAt: editingGalleryItem ? (editingGalleryItem.createdAt || new Date().toISOString()) : new Date().toISOString()
+      const res = await fetch(`${apiBase}/content/gallery`, {
+        method: "POST",
+        headers: {
+          ...getAuthHeaders()
+        },
+        body: formData
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || "Upload failed")
       }
 
-      await setDoc(doc(db, "gallery", galleryDocId), newItem)
-
-      if (editingGalleryItem) {
-        setGalleryItems(galleryItems.map(g => g.id === editingGalleryItem.id ? newItem : g))
-        setGallerySuccess("✓ Gallery asset updated successfully!")
-        logAction(`Updated gallery image: ${newGalleryTitle}`, "Gallery")
-      } else {
-        setGalleryItems([newItem, ...galleryItems])
-        setGallerySuccess("✓ Image successfully uploaded to Gallery!")
-        logAction(`Uploaded gallery image: ${newGalleryTitle}`, "Gallery")
-      }
-
+      setGallerySuccess("Gallery item saved successfully!")
       setNewGalleryTitle("")
       setGalleryFile(null)
       setGalleryUrlInput("")
-      setEditingGalleryItem(null)
-
-      setTimeout(() => setGallerySuccess(""), 4000)
+      await refreshAdminData()
     } catch (err: any) {
-      console.error("Gallery save failed:", err)
-      setGalleryError("Save failed: " + (err?.message || "Unknown error"))
+      console.error(err)
+      setGalleryError(err.message || "Gallery upload failed.")
     } finally {
       setGalleryUploading(false)
     }
   }
 
   const handleGalleryDelete = async (item: any) => {
-    if (!confirm(`Delete "${item.title}" from gallery?`)) return
+    if (!confirm(`Delete "${item.title}" from Gallery?`)) return
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
     try {
-      if (item.id.startsWith("gallery-static-")) {
-        setGalleryItems(galleryItems.filter(g => g.id !== item.id))
-      } else {
-        await deleteDoc(doc(db, "gallery", item.id))
-        if (item.storagePath) {
-          deleteObject(ref(storage, item.storagePath)).catch(() => {})
+      const res = await fetch(`${apiBase}/content/gallery/${item.id}`, {
+        method: "DELETE",
+        headers: {
+          ...getAuthHeaders()
         }
-        setGalleryItems(galleryItems.filter(g => g.id !== item.id))
+      })
+      if (!res.ok) {
+        throw new Error("Failed to delete gallery item")
       }
+      await refreshAdminData()
       logAction(`Deleted gallery item: ${item.title}`, "Gallery")
     } catch (err) {
-      console.error("Gallery delete error:", err)
-      alert("Failed to delete gallery item.")
+      console.error(err)
+      alert("Gallery deletion failed.")
     }
   }
 
@@ -420,43 +655,37 @@ export default function Admin() {
     setMemberSuccess("")
     setMemberUploading(true)
 
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
     try {
-      let imageData = editingMember ? editingMember.img : ""
-      let storagePath = editingMember ? (editingMember.storagePath || "") : ""
-
-      if (memberInputMode === "url" && memberUrlInput.trim()) {
-        imageData = memberUrlInput.trim()
-        storagePath = ""
-      } else if (memberFile) {
-        imageData = await fileToBase64(memberFile)
-        storagePath = ""
-      }
-
-      const docId = editingMember ? editingMember.id : `team-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
-      const savedMember = {
-        id: docId,
-        name: newMemberName.trim(),
-        role: newMemberRole.trim(),
-        committee: newMemberCommittee,
-        img: imageData,
-        linkedin: newMemberLinkedin.trim(),
-        email: newMemberEmail.trim(),
-        storagePath,
-        createdAt: editingMember ? (editingMember.createdAt || new Date().toISOString()) : new Date().toISOString()
-      }
-
-      await setDoc(doc(db, "team", docId), savedMember)
-
+      const formData = new FormData()
       if (editingMember) {
-        setTeamItems(teamItems.map(m => m.id === editingMember.id ? savedMember : m))
-        setMemberSuccess("✓ Member updated successfully!")
-        logAction(`Updated team member: ${newMemberName}`, "Team")
-      } else {
-        setTeamItems([savedMember, ...teamItems])
-        setMemberSuccess("✓ Member added to team successfully!")
-        logAction(`Added team member: ${newMemberName}`, "Team")
+        formData.append("id", editingMember.id)
+      }
+      formData.append("name", newMemberName.trim())
+      formData.append("role", newMemberRole.trim())
+      formData.append("committee", newMemberCommittee)
+      formData.append("email", newMemberEmail.trim())
+      formData.append("linkedin", newMemberLinkedin.trim())
+
+      if (memberInputMode === "file" && memberFile) {
+        formData.append("file", memberFile)
+      } else if (memberUrlInput.trim()) {
+        formData.append("imageUrl", memberUrlInput.trim())
       }
 
+      const res = await fetch(`${apiBase}/content/team`, {
+        method: "POST",
+        headers: {
+          ...getAuthHeaders()
+        },
+        body: formData
+      })
+
+      if (!res.ok) {
+        throw new Error("Failed to save team member")
+      }
+
+      setMemberSuccess("Member saved to team successfully!")
       setNewMemberName("")
       setNewMemberRole("")
       setNewMemberEmail("")
@@ -464,8 +693,7 @@ export default function Admin() {
       setMemberFile(null)
       setMemberUrlInput("")
       setEditingMember(null)
-
-      setTimeout(() => setMemberSuccess(""), 4000)
+      await refreshAdminData()
     } catch (err: any) {
       console.error("Team member save error:", err)
       setMemberError("Failed to save team member: " + (err?.message || "Unknown error"))
@@ -481,85 +709,33 @@ export default function Admin() {
     setNewMemberCommittee(member.committee || "Technical Committee")
     setNewMemberEmail(member.email || "")
     setNewMemberLinkedin(member.linkedin || "")
-    setMemberUrlInput(member.img || "")
+    setMemberUrlInput(member.image || "")
     setMemberInputMode("url")
     window.scrollTo({ top: 500, behavior: "smooth" })
   }
 
   const handleMemberDelete = async (member: any) => {
     if (!confirm(`Delete ${member.name} from Team?`)) return
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
     try {
-      // 1. If it has a specific Firestore ID (not purely static placeholder), delete by ID
-      if (member.id && !member.id.startsWith("team-static-")) {
-        await deleteDoc(doc(db, "team", member.id))
+      const res = await fetch(`${apiBase}/content/team/${member.id}`, {
+        method: "DELETE",
+        headers: {
+          ...getAuthHeaders()
+        }
+      })
+      if (!res.ok) {
+        throw new Error("Failed to delete team member")
       }
-
-      // 2. Query Firestore by member name to purge any seeded or duplicate documents for this person
-      if (member.name) {
-        const q = query(collection(db, "team"), where("name", "==", member.name))
-        const qSnap = await getDocs(q)
-        const deletePromises: Promise<void>[] = []
-        qSnap.forEach((d) => {
-          deletePromises.push(deleteDoc(doc(db, "team", d.id)))
-        })
-        await Promise.all(deletePromises)
-      }
-
-      // 3. Delete associated storage object if path exists
-      if (member.storagePath) {
-        deleteObject(ref(storage, member.storagePath)).catch(() => {})
-      }
-
-      // 4. Update local state
-      setTeamItems(prev => prev.filter(m => (m.id !== member.id && m.name !== member.name)))
+      await refreshAdminData()
       logAction(`Deleted team member: ${member.name}`, "Team")
     } catch (err) {
       console.error("Delete member error:", err)
-      alert("Failed to delete team member from Firestore.")
+      setTeamItems(prev => prev.filter(m => m.id !== member.id))
     }
   }
 
-  // Handle FAQ Creation & Delete
-  const handleSaveFaq = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newFaq.question.trim() || !newFaq.answer.trim()) return
 
-    try {
-      const faqId = editingFaqId || `faq-${Date.now()}`
-      const faqData = {
-        id: faqId,
-        question: newFaq.question.trim(),
-        answer: newFaq.answer.trim(),
-        updatedAt: new Date().toISOString()
-      }
-      await setDoc(doc(db, "faqs", faqId), faqData, { merge: true })
-      
-      if (editingFaqId) {
-        setLocalFaqs(localFaqs.map(f => f.id === editingFaqId ? faqData : f))
-        logAction(`Updated FAQ: ${newFaq.question}`, "FAQs")
-      } else {
-        setLocalFaqs([...localFaqs, faqData])
-        logAction(`Created FAQ: ${newFaq.question}`, "FAQs")
-      }
-      setNewFaq({ question: "", answer: "" })
-      setEditingFaqId(null)
-    } catch (err) {
-      console.error(err)
-      alert("Failed to save FAQ.")
-    }
-  }
-
-  const handleDeleteFaq = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this FAQ?")) return
-    try {
-      await deleteDoc(doc(db, "faqs", id))
-      setLocalFaqs(localFaqs.filter(f => f.id !== id))
-      logAction("Deleted FAQ entry", "FAQs")
-    } catch (err) {
-      console.error(err)
-      alert("Failed to delete FAQ.")
-    }
-  }
 
   // CSV Roster Exporter
   const exportRegistrationsCSV = () => {
@@ -597,7 +773,7 @@ export default function Admin() {
     )
   }
 
-  if (!user || user.role !== "admin") {
+  if (!user || (user.role !== "admin" && user.role !== "super_admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center text-foreground px-4">
         <div className="text-center max-w-md glass-panel p-8 rounded-3xl border border-border/80 shadow-2xl">
@@ -607,11 +783,11 @@ export default function Admin() {
             {user ? `Currently logged in as ${user.email} (Role: ${user.role}). Administrator role required to access the CMS.` : "Please log in with administrator credentials to access the Executive CMS Command Center."}
           </p>
           <div className="flex flex-col gap-3">
-            <Button onClick={() => navigate("/login")} variant="glow" className="w-full py-4 font-bold text-xs">
+            <Button onClick={() => navigate("/patidar/admin")} variant="glow" className="w-full py-4 font-bold text-xs">
               Go to Login Page
             </Button>
-            <Button onClick={() => navigate("/dashboard/profile")} variant="outline" className="w-full py-3 font-bold text-xs border-border">
-              Return to Student Portal
+            <Button onClick={() => navigate("/")} variant="outline" className="w-full py-3 font-bold text-xs border-border">
+              Return to Website
             </Button>
           </div>
         </div>
@@ -637,7 +813,7 @@ export default function Admin() {
             <div>
               <div className="flex items-center gap-2.5 flex-wrap mb-1">
                 <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1.5">
-                  <Activity className="w-3 h-3 text-primary animate-pulse" /> Cloud Firestore Sync Active
+                  <Activity className="w-3 h-3 text-primary animate-pulse" /> MongoDB Atlas Sync Active
                 </span>
                 <span className="text-[10px] font-mono text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full border border-border">
                   Latency: ~24ms
@@ -663,20 +839,22 @@ export default function Admin() {
               </Button>
               
               <Button
-                onClick={() => navigate("/dashboard/profile")}
+                onClick={() => navigate("/")}
                 variant="outline"
-                className="gap-2 text-xs font-bold py-3 border-border hover:border-secondary/40 flex-1 lg:flex-initial"
+                className="gap-2 text-xs font-bold py-3 border-border flex-1 lg:flex-initial"
               >
-                <Users className="w-4 h-4 text-secondary" />
-                Student Portal
+                Website View <ArrowUpRight className="w-4 h-4" />
               </Button>
 
               <Button
-                onClick={() => navigate("/")}
-                variant="glow"
-                className="gap-2 text-xs font-bold py-3 flex-1 lg:flex-initial"
+                onClick={() => {
+                  useAuthStore.getState().logout()
+                  navigate("/patidar/admin")
+                }}
+                variant="destructive"
+                className="gap-2 text-xs font-bold py-3 flex-1 lg:flex-initial cursor-pointer"
               >
-                Website Public View <ArrowUpRight className="w-4 h-4" />
+                <LogOut className="w-4 h-4" /> Log Out
               </Button>
             </div>
           </div>
@@ -690,7 +868,7 @@ export default function Admin() {
             { label: "Completed", value: completedCount, icon: CheckCircle2, color: "text-cyan-400" },
             { label: "Gallery Assets", value: galleryItems.length, icon: ImageIcon, color: "text-secondary" },
             { label: "Team Members", value: teamItems.length, icon: Users, color: "text-amber-400" },
-            { label: "Faculty Mentors", value: staticMentors.length, icon: Shield, color: "text-purple-400" },
+            { label: "Faculty Mentors", value: localMentors.length || 2, icon: Shield, color: "text-purple-400" },
             { label: "Registrations", value: dbRegistrations.length, icon: Wallet, color: "text-emerald-400" },
             { label: "FAQs Entries", value: localFaqs.length, icon: HelpCircle, color: "text-rose-400" }
           ].map((m, idx) => {
@@ -728,8 +906,9 @@ export default function Admin() {
                 { id: "events", label: "Events Manager", icon: Calendar, badge: localEvents.length },
                 { id: "gallery", label: "Gallery Assets", icon: ImageIcon, badge: galleryItems.length },
                 { id: "team", label: "Team Directory", icon: Users, badge: teamItems.length },
-                { id: "faqs", label: "Knowledge FAQs", icon: HelpCircle, badge: localFaqs.length },
-                { id: "registrations", label: "Registrations Roster", icon: Wallet, badge: dbRegistrations.length }
+                { id: "registrations", label: "Registrations Roster", icon: Wallet, badge: dbRegistrations.length },
+                { id: "messages", label: "Contact Messages", icon: Mail, badge: contactStats.unread > 0 ? `${contactStats.unread} NEW` : contactStats.total },
+                ...(user && (user.role as string) === "super_admin" ? [{ id: "admins", label: "Admins Management", icon: Shield, badge: "RBAC" }] : [])
               ].map((tab) => {
                 const Icon = tab.icon
                 const isActive = activeTab === tab.id
@@ -826,16 +1005,6 @@ export default function Admin() {
                         <span className="text-[10px] text-muted-foreground">Committee leads</span>
                       </button>
 
-                      <button
-                        onClick={() => setActiveTab("faqs")}
-                        className="p-4 rounded-2xl bg-muted/40 hover:bg-muted/80 border border-border text-left transition-all flex flex-col items-start gap-2 group"
-                      >
-                        <div className="p-2.5 bg-purple-500/10 rounded-xl text-purple-400 group-hover:scale-110 transition-transform">
-                          <HelpCircle className="w-4 h-4" />
-                        </div>
-                        <span className="text-xs font-bold text-foreground">Edit FAQs</span>
-                        <span className="text-[10px] text-muted-foreground">Manage answers</span>
-                      </button>
                     </div>
                   </div>
 
@@ -862,21 +1031,21 @@ export default function Admin() {
                     <div className="glass-panel p-6 rounded-3xl border border-border/80 bg-card/40 dark:bg-slate-900/40 flex flex-col justify-between">
                       <div>
                         <h3 className="text-sm font-extrabold text-foreground mb-4 flex items-center gap-2">
-                          <Database className="w-4 h-4 text-secondary" /> Firestore Architecture Status
+                          <Database className="w-4 h-4 text-secondary" /> Database & Media Architecture
                         </h3>
                         
                         <div className="flex flex-col gap-2.5 text-xs font-medium">
                           <div className="flex justify-between py-2 border-b border-border/40">
-                            <span className="text-muted-foreground">Project ID</span>
-                            <span className="font-mono text-primary font-bold">iste-mits-2026</span>
+                            <span className="text-muted-foreground">Database Name</span>
+                            <span className="font-mono text-primary font-bold">iste_mits_db</span>
                           </div>
                           <div className="flex justify-between py-2 border-b border-border/40">
                             <span className="text-muted-foreground">Database Engine</span>
-                            <span className="font-mono text-foreground font-bold">Cloud Firestore (Default)</span>
+                            <span className="font-mono text-foreground font-bold">MongoDB Atlas</span>
                           </div>
                           <div className="flex justify-between py-2 border-b border-border/40">
-                            <span className="text-muted-foreground">Storage Bucket</span>
-                            <span className="font-mono text-foreground font-bold">iste-mits-2026.appspot.com</span>
+                            <span className="text-muted-foreground">Media CDN Engine</span>
+                            <span className="font-mono text-foreground font-bold">Cloudinary (durtt51an)</span>
                           </div>
                           <div className="flex justify-between py-2">
                             <span className="text-muted-foreground">Admin Session Status</span>
@@ -1431,7 +1600,7 @@ export default function Admin() {
                         {teamItems.map((m) => (
                           <div key={m.id} className="glass-panel p-5 rounded-2xl border border-border/80 flex items-start justify-between gap-3">
                             <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 rounded-xl bg-cover bg-center shrink-0 border border-border" style={{ backgroundImage: `url(${m.img || fallbackImage})` }} />
+                              <div className="w-12 h-12 rounded-xl bg-cover bg-center shrink-0 border border-border" style={{ backgroundImage: `url(${m.image || fallbackImage})` }} />
                               <div>
                                 <span className="text-[9px] font-extrabold uppercase text-amber-400">{m.committee}</span>
                                 <h4 className="font-extrabold text-foreground text-sm leading-tight">{m.name}</h4>
@@ -1455,88 +1624,6 @@ export default function Admin() {
                 </motion.div>
               )}
 
-              {/* TAB 4: FAQS EDITOR */}
-              {activeTab === "faqs" && (
-                <motion.div
-                  key="faqs"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="flex flex-col gap-8"
-                >
-                  {/* Add FAQ Form */}
-                  <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-border bg-card/40 dark:bg-slate-900/40">
-                    <h3 className="text-base font-extrabold text-foreground mb-6 flex items-center gap-2">
-                      <HelpCircle className="w-5 h-5 text-purple-400" />
-                      {editingFaqId ? "Edit Knowledge FAQ" : "Add New Knowledge FAQ"}
-                    </h3>
-
-                    <form onSubmit={handleSaveFaq} className="flex flex-col gap-4">
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase">Question *</label>
-                        <Input
-                          required
-                          type="text"
-                          value={newFaq.question}
-                          onChange={(e) => setNewFaq({ ...newFaq, question: e.target.value })}
-                          placeholder="e.g. How do I join the ISTE MITS Student Chapter?"
-                          className="bg-background border-border/80 py-3 rounded-xl text-xs sm:text-sm"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase">Answer *</label>
-                        <textarea
-                          required
-                          value={newFaq.answer}
-                          onChange={(e) => setNewFaq({ ...newFaq, answer: e.target.value })}
-                          placeholder="Detailed answer explaining chapter procedures..."
-                          rows={3}
-                          className="w-full rounded-xl bg-background border border-border px-4 py-3 text-sm text-foreground outline-none resize-none"
-                        />
-                      </div>
-
-                      <Button type="submit" variant="glow" className="py-4 font-bold text-xs sm:text-sm justify-center gap-2 rounded-xl">
-                        {editingFaqId ? "Update FAQ Entry" : "Save FAQ Entry"}
-                      </Button>
-                    </form>
-                  </div>
-
-                  {/* FAQs List */}
-                  <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-border bg-card/40 dark:bg-slate-900/40">
-                    <h3 className="text-base font-extrabold text-foreground mb-6">
-                      Published FAQs ({localFaqs.length})
-                    </h3>
-
-                    <div className="flex flex-col gap-3">
-                      {localFaqs.map((faq) => (
-                        <div key={faq.id} className="p-4 rounded-2xl bg-muted/30 border border-border/60 flex items-start justify-between gap-4">
-                          <div>
-                            <h4 className="font-bold text-foreground text-sm">{faq.question}</h4>
-                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{faq.answer}</p>
-                          </div>
-
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              onClick={() => {
-                                setEditingFaqId(faq.id)
-                                setNewFaq({ question: faq.question, answer: faq.answer })
-                              }}
-                              className="p-1.5 hover:bg-muted rounded-lg text-primary"
-                            >
-                              <Edit className="w-3.5 h-3.5" />
-                            </button>
-                            <button onClick={() => handleDeleteFaq(faq.id)} className="p-1.5 hover:bg-muted rounded-lg text-destructive">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
               {/* TAB 5: REGISTRATIONS ROSTER */}
               {activeTab === "registrations" && (
                 <motion.div
@@ -1551,7 +1638,7 @@ export default function Admin() {
                       <h3 className="text-base font-extrabold text-foreground">
                         Event Registrations Roster ({dbRegistrations.length})
                       </h3>
-                      <p className="text-xs text-muted-foreground font-medium mt-0.5">Real-time attendee enrollments stored in Cloud Firestore.</p>
+                      <p className="text-xs text-muted-foreground font-medium mt-0.5">Real-time attendee enrollments stored in MongoDB Atlas.</p>
                     </div>
 
                     <Button onClick={exportRegistrationsCSV} variant="outline" size="sm" className="gap-2 text-xs font-bold">
@@ -1561,7 +1648,7 @@ export default function Admin() {
 
                   {dbRegistrations.length === 0 ? (
                     <div className="text-center py-10 text-muted-foreground text-xs font-semibold">
-                      No event registrations recorded in Firestore yet.
+                      No event registrations recorded in MongoDB yet.
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
@@ -1597,11 +1684,572 @@ export default function Admin() {
                   )}
                 </motion.div>
               )}
+
+              {/* TAB 6: ADMINS MANAGEMENT (SUPER ADMIN ONLY) */}
+              {activeTab === "admins" && user?.role === "super_admin" && (
+                <motion.div
+                  key="admins"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex flex-col gap-6"
+                >
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-extrabold text-foreground tracking-tight">Administrative Roster</h2>
+                      <p className="text-xs text-muted-foreground mt-1">Configure role levels, permissions, and session access flags.</p>
+                    </div>
+                    <Button onClick={() => { setIsAddAdminOpen(true); setAdminActionError(""); }} className="gap-2 text-xs font-bold py-2.5 rounded-xl bg-primary text-slate-950 shadow-[0_0_20px_rgba(0,243,255,0.2)] hover:shadow-[0_0_30px_rgba(0,243,255,0.35)]">
+                      <UserPlus className="w-4 h-4" /> Enroll New Admin
+                    </Button>
+                  </div>
+
+                  {/* Filters Header Panel */}
+                  <div className="glass-panel p-4 rounded-3xl border border-border/80 bg-card/40 dark:bg-slate-900/40 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="relative">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        value={adminSearch}
+                        onChange={(e) => { setAdminSearch(e.target.value); setAdminCurrentPage(1); }}
+                        placeholder="Search admins by name or email..."
+                        className="pl-10 bg-slate-950/40 border-border text-xs rounded-xl"
+                      />
+                    </div>
+                    <div>
+                      <select
+                        value={adminRoleFilter}
+                        onChange={(e) => { setAdminRoleFilter(e.target.value); setAdminCurrentPage(1); }}
+                        className="w-full rounded-xl bg-slate-950/40 border border-border px-4 py-2.5 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none"
+                      >
+                        <option value="all">All Roles</option>
+                        <option value="super_admin">Super Admins</option>
+                        <option value="admin">Standard Admins</option>
+                      </select>
+                    </div>
+                    <div>
+                      <select
+                        value={adminStatusFilter}
+                        onChange={(e) => { setAdminStatusFilter(e.target.value); setAdminCurrentPage(1); }}
+                        className="w-full rounded-xl bg-slate-950/40 border border-border px-4 py-2.5 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="active">Active Only</option>
+                        <option value="disabled">Disabled Only</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {adminsError && (
+                    <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold flex items-center gap-3">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{adminsError}</span>
+                      <button onClick={fetchAdmins} className="ml-auto text-[10px] font-bold text-primary underline">Retry Roster Sync</button>
+                    </div>
+                  )}
+
+                  {/* Admins Data Table */}
+                  <div className="glass-panel rounded-3xl border border-border/80 bg-card/40 dark:bg-slate-900/40 overflow-hidden shadow-xl">
+                    {adminsLoading ? (
+                      <div className="p-12 flex flex-col items-center justify-center gap-3">
+                        <RefreshCw className="w-8 h-8 animate-spin text-primary" />
+                        <p className="text-xs text-muted-foreground font-semibold">Synchronizing administrator privileges...</p>
+                      </div>
+                    ) : (
+                      (() => {
+                        const filtered = adminsList.filter(admin => {
+                          const query = adminSearch.toLowerCase()
+                          const matchesSearch = admin.name?.toLowerCase().includes(query) || admin.email?.toLowerCase().includes(query)
+                          const matchesRole = adminRoleFilter === "all" || (admin.role || "").toLowerCase() === adminRoleFilter
+                          const matchesStatus = adminStatusFilter === "all" || (admin.status || "").toLowerCase() === adminStatusFilter
+                          return matchesSearch && matchesRole && matchesStatus
+                        })
+
+                        const pageCount = Math.ceil(filtered.length / adminPageSize)
+                        const paginatedAdmins = filtered.slice((adminCurrentPage - 1) * adminPageSize, adminCurrentPage * adminPageSize)
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="p-12 text-center">
+                              <Shield className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-40" />
+                              <p className="text-sm font-bold text-foreground">No administrative accounts found</p>
+                              <p className="text-xs text-muted-foreground mt-1">Refine your active search query or status filter parameters.</p>
+                            </div>
+                          )
+                        }
+
+                        return (
+                          <>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left border-collapse">
+                                <thead>
+                                  <tr className="border-b border-border/60 bg-slate-950/20 text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
+                                    <th className="py-4 px-5">Administrator Profile</th>
+                                    <th className="py-4 px-4">Workspace Privilege</th>
+                                    <th className="py-4 px-4">Activity Status</th>
+                                    <th className="py-4 px-4">Registration Date</th>
+                                    <th className="py-4 px-4 text-right">Actions Panel</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {paginatedAdmins.map((admin) => {
+                                    const isSelf = admin.email?.toLowerCase() === user?.email?.toLowerCase()
+                                    return (
+                                      <tr key={admin.id} className="border-b border-border/40 hover:bg-slate-950/10 transition-colors">
+                                        {/* Avatar & Details */}
+                                        <td className="py-4 px-5">
+                                          <div className="flex items-center gap-3">
+                                            <div className="relative w-9 h-9 rounded-full overflow-hidden bg-primary/10 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary shadow-sm">
+                                              {admin.picture ? (
+                                                <img src={admin.picture} alt={admin.name} className="w-full h-full object-cover" />
+                                              ) : (
+                                                admin.name?.charAt(0) || "A"
+                                              )}
+                                            </div>
+                                            <div>
+                                              <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                                {admin.name} {isSelf && <span className="text-[9px] font-black uppercase bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">Self</span>}
+                                              </p>
+                                              <p className="text-[10px] text-muted-foreground mt-0.5">{admin.email}</p>
+                                            </div>
+                                          </div>
+                                        </td>
+                                        {/* Role level */}
+                                        <td className="py-4 px-4">
+                                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                                            (admin.role || "").toLowerCase() === "super_admin"
+                                              ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                              : "bg-primary/10 text-primary border-primary/20"
+                                          }`}>
+                                            <Shield className="w-2.5 h-2.5" />
+                                            {admin.role === "super_admin" ? "Super Admin" : "Admin"}
+                                          </span>
+                                        </td>
+                                        {/* Status Toggle */}
+                                        <td className="py-4 px-4">
+                                          <button
+                                            disabled={isSelf}
+                                            onClick={() => handleToggleAdminStatus(admin.id, admin.status)}
+                                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase border transition-all ${
+                                              (admin.status || "").toLowerCase() === "active"
+                                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+                                                : "bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20"
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                          >
+                                            <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                                              (admin.status || "").toLowerCase() === "active" ? "bg-emerald-400" : "bg-destructive"
+                                            }`} />
+                                            {admin.status || "active"}
+                                          </button>
+                                        </td>
+                                        {/* Registration Date */}
+                                        <td className="py-4 px-4 text-xs font-medium text-muted-foreground">
+                                          {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "Seed Account"}
+                                        </td>
+                                        {/* Actions */}
+                                        <td className="py-4 px-4 text-right">
+                                          <div className="flex items-center justify-end gap-2">
+                                            <Button
+                                              disabled={isSelf}
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => handleToggleAdminRole(admin.id, admin.role)}
+                                              className="h-8 text-[10px] font-bold border-border/80 text-foreground hover:bg-primary hover:text-slate-950 transition-all rounded-lg disabled:opacity-50"
+                                              title={admin.role === "super_admin" ? "Demote privileges to standard admin" : "Promote privileges to super admin"}
+                                            >
+                                              {admin.role === "super_admin" ? "Demote" : "Promote"}
+                                            </Button>
+                                            <Button
+                                              disabled={isSelf}
+                                              variant="destructive"
+                                              size="sm"
+                                              onClick={() => handleDeleteAdmin(admin.id, admin.email)}
+                                              className="h-8 px-2.5 rounded-lg text-xs font-bold flex items-center justify-center border border-destructive/20 hover:bg-destructive/20 text-destructive disabled:opacity-50"
+                                              title="Permanently remove administrative privileges"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </Button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    )
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                            
+                            {/* Pagination Controls */}
+                            {pageCount > 1 && (
+                              <div className="flex items-center justify-between px-5 py-4 border-t border-border/60 bg-slate-950/10">
+                                <span className="text-[11px] text-muted-foreground font-semibold">
+                                  Showing page {adminCurrentPage} of {pageCount} ({filtered.length} total admins)
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    disabled={adminCurrentPage === 1}
+                                    onClick={() => setAdminCurrentPage(p => Math.max(1, p - 1))}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 px-3 text-xs font-bold border-border"
+                                  >
+                                    Previous
+                                  </Button>
+                                  <Button
+                                    disabled={adminCurrentPage === pageCount}
+                                    onClick={() => setAdminCurrentPage(p => Math.min(pageCount, p + 1))}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 px-3 text-xs font-bold border-border"
+                                  >
+                                    Next
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )
+                      })()
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* TAB: CONTACT MESSAGES CMS */}
+              {activeTab === "messages" && (
+                <motion.div
+                  key="messages"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex flex-col gap-6"
+                >
+                  {/* Summary Stats Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="glass-panel p-5 rounded-2xl border border-border/80 bg-card/40 flex items-center justify-between">
+                      <div>
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Total Submissions</p>
+                        <p className="text-2xl font-black text-foreground mt-1">{contactStats.total}</p>
+                      </div>
+                      <div className="p-3 bg-primary/10 text-primary rounded-xl">
+                        <Mail className="w-5 h-5" />
+                      </div>
+                    </div>
+                    <div className="glass-panel p-5 rounded-2xl border border-border/80 bg-card/40 flex items-center justify-between">
+                      <div>
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Unread Messages</p>
+                        <p className="text-2xl font-black text-amber-400 mt-1">{contactStats.unread}</p>
+                      </div>
+                      <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
+                        <AlertCircle className="w-5 h-5" />
+                      </div>
+                    </div>
+                    <div className="glass-panel p-5 rounded-2xl border border-border/80 bg-card/40 flex items-center justify-between">
+                      <div>
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Read Messages</p>
+                        <p className="text-2xl font-black text-emerald-400 mt-1">{contactStats.read}</p>
+                      </div>
+                      <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Messages Table & Controls Panel */}
+                  <div className="glass-panel p-6 rounded-3xl border border-border/80 bg-card/40 flex flex-col gap-5">
+                    {/* Controls Bar */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                      <div className="relative flex-1">
+                        <Search className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <Input
+                          type="text"
+                          value={contactSearch}
+                          onChange={(e) => {
+                            setContactSearch(e.target.value)
+                            setContactPage(1)
+                          }}
+                          placeholder="Search by sender, email, subject..."
+                          className="pl-10 bg-background/80 border-border/80 py-2.5 text-xs rounded-xl"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {["All", "Unread", "Read"].map((st) => (
+                          <button
+                            key={st}
+                            onClick={() => {
+                              setContactStatusFilter(st)
+                              setContactPage(1)
+                            }}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                              contactStatusFilter === st
+                                ? "bg-primary text-slate-950 shadow-sm"
+                                : "bg-background/80 border border-border/60 text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {st}
+                          </button>
+                        ))}
+                        <Button
+                          onClick={() => refreshContactMessages()}
+                          variant="outline"
+                          size="sm"
+                          className="h-9 px-3 rounded-xl border-border/80 text-xs font-bold"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${contactLoading ? "animate-spin" : ""}`} />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Table */}
+                    {contactLoading ? (
+                      <div className="flex items-center justify-center py-16">
+                        <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                      </div>
+                    ) : contactMessages.length === 0 ? (
+                      <div className="text-center py-16 text-muted-foreground">
+                        <Mail className="w-8 h-8 mx-auto mb-2 opacity-40 text-primary" />
+                        <p className="text-sm font-bold text-foreground">No contact messages found</p>
+                        <p className="text-xs mt-1">Try clearing filters or search terms.</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto rounded-2xl border border-border/60">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-950/40 text-muted-foreground uppercase text-[10px] font-extrabold tracking-wider border-b border-border/60">
+                            <tr>
+                              <th className="p-3.5">Status</th>
+                              <th className="p-3.5">Sender</th>
+                              <th className="p-3.5">Subject & Message</th>
+                              <th className="p-3.5">Submitted At</th>
+                              <th className="p-3.5 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border/40 font-medium">
+                            {contactMessages.map((msg) => (
+                              <tr key={msg.id} className={`hover:bg-muted/20 transition-colors ${msg.status === "Unread" ? "bg-primary/5" : ""}`}>
+                                <td className="p-3.5">
+                                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                    msg.status === "Unread" ? "bg-amber-500/10 text-amber-400 border border-amber-500/30" : "bg-muted text-muted-foreground"
+                                  }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${msg.status === "Unread" ? "bg-amber-400 animate-pulse" : "bg-muted-foreground"}`} />
+                                    {msg.status}
+                                  </span>
+                                </td>
+                                <td className="p-3.5">
+                                  <p className="font-extrabold text-foreground">{msg.name}</p>
+                                  <p className="text-[11px] text-muted-foreground">{msg.email}</p>
+                                </td>
+                                <td className="p-3.5 max-w-xs">
+                                  <p className="font-bold text-foreground truncate">{msg.subject}</p>
+                                  <p className="text-[11px] text-muted-foreground truncate">{msg.message}</p>
+                                </td>
+                                <td className="p-3.5 text-muted-foreground text-[11px]">
+                                  {new Date(msg.createdAt).toLocaleString()}
+                                </td>
+                                <td className="p-3.5 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <Button
+                                      onClick={() => setSelectedContactMessage(msg)}
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 px-2.5 rounded-lg text-xs font-bold border-border/80"
+                                      title="View Full Message"
+                                    >
+                                      <Eye className="w-3.5 h-3.5 text-primary" />
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleToggleReadStatus(msg.id, msg.status)}
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 px-2.5 rounded-lg text-xs font-bold border-border/80"
+                                      title={msg.status === "Unread" ? "Mark as Read" : "Mark as Unread"}
+                                    >
+                                      <CheckCircle2 className={`w-3.5 h-3.5 ${msg.status === "Unread" ? "text-amber-400" : "text-muted-foreground"}`} />
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleDeleteContactMessage(msg.id)}
+                                      variant="destructive"
+                                      size="sm"
+                                      className="h-8 px-2.5 rounded-lg text-xs font-bold"
+                                      title="Delete Message"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Full Message Detail Modal */}
+                  {selectedContactMessage && (
+                    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="glass-panel p-6 sm:p-8 rounded-3xl border border-border/80 bg-card max-w-xl w-full flex flex-col gap-5 shadow-2xl relative"
+                      >
+                        <div className="flex items-start justify-between border-b border-border/60 pb-4">
+                          <div>
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase mb-1 ${
+                              selectedContactMessage.status === "Unread" ? "bg-amber-500/10 text-amber-400 border border-amber-500/30" : "bg-emerald-500/10 text-emerald-400"
+                            }`}>
+                              {selectedContactMessage.status} Message
+                            </span>
+                            <h3 className="text-lg font-black text-foreground">{selectedContactMessage.subject}</h3>
+                          </div>
+                          <button
+                            onClick={() => setSelectedContactMessage(null)}
+                            className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 text-xs bg-muted/20 p-4 rounded-2xl border border-border/40">
+                          <div>
+                            <p className="text-[10px] uppercase font-bold text-muted-foreground">Sender Name</p>
+                            <p className="font-extrabold text-foreground mt-0.5">{selectedContactMessage.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase font-bold text-muted-foreground">Email Address</p>
+                            <p className="font-extrabold text-primary mt-0.5 truncate">{selectedContactMessage.email}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase font-bold text-muted-foreground">Submitted At</p>
+                            <p className="font-semibold text-foreground mt-0.5">{new Date(selectedContactMessage.createdAt).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] uppercase font-bold text-muted-foreground">Client IP</p>
+                            <p className="font-semibold text-foreground mt-0.5">{selectedContactMessage.ipAddress || "127.0.0.1"}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                          <p className="text-xs uppercase font-bold text-muted-foreground">Message Body</p>
+                          <div className="p-4 rounded-2xl bg-background/80 border border-border/80 text-xs sm:text-sm text-foreground leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto font-medium">
+                            {selectedContactMessage.message}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 pt-2 border-t border-border/60">
+                          <a
+                            href={`mailto:${selectedContactMessage.email}?subject=Re: ${encodeURIComponent(selectedContactMessage.subject)}`}
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-slate-950 font-extrabold text-xs hover:bg-cyan-300 transition-colors"
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                            <span>Reply via Email</span>
+                          </a>
+                          <Button
+                            onClick={() => handleToggleReadStatus(selectedContactMessage.id, selectedContactMessage.status)}
+                            variant="outline"
+                            size="sm"
+                            className="h-9 px-4 rounded-xl text-xs font-bold border-border"
+                          >
+                            Mark as {selectedContactMessage.status === "Unread" ? "Read" : "Unread"}
+                          </Button>
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
             </AnimatePresence>
           </div>
         </div>
 
       </div>
+
+      {/* ADD NEW ADMIN MODAL DIALOG */}
+      <AnimatePresence>
+        {isAddAdminOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-panel w-full max-w-md p-6 sm:p-8 rounded-3xl border border-border/80 bg-slate-900 shadow-2xl relative overflow-hidden"
+            >
+              <h3 className="text-base font-extrabold text-foreground mb-1 flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-primary" /> Enroll Administrative User
+              </h3>
+              <p className="text-xs text-muted-foreground mb-6 leading-relaxed">
+                Add the Google institutional account details to grant dashboard CMS privileges.
+              </p>
+
+              <form onSubmit={handleAddAdmin} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
+                    Full Name *
+                  </label>
+                  <Input
+                    required
+                    value={newAdminName}
+                    onChange={(e) => setNewAdminName(e.target.value)}
+                    placeholder="e.g. Shivam Patidar"
+                    className="bg-slate-950 border-border text-xs rounded-xl py-2.5 animate-none"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
+                    Google Email Address *
+                  </label>
+                  <Input
+                    required
+                    type="email"
+                    value={newAdminEmail}
+                    onChange={(e) => setNewAdminEmail(e.target.value)}
+                    placeholder="e.g. user@gmail.com"
+                    className="bg-slate-950 border-border text-xs rounded-xl py-2.5 animate-none"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">
+                    Assign Role Level
+                  </label>
+                  <select
+                    value={newAdminRole}
+                    onChange={(e) => setNewAdminRole(e.target.value)}
+                    className="w-full rounded-xl bg-slate-950 border border-border px-4 py-3 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none"
+                  >
+                    <option value="admin">Standard Admin (CMS manager)</option>
+                    <option value="super_admin">Super Admin (Full privileges)</option>
+                  </select>
+                </div>
+
+                {adminActionError && (
+                  <p className="text-xs font-semibold text-destructive mt-2 leading-relaxed">
+                    {adminActionError}
+                  </p>
+                )}
+
+                <div className="flex items-center justify-end gap-3 mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsAddAdminOpen(false)}
+                    className="h-10 text-xs font-bold border-border rounded-xl px-4"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={adminActionLoading}
+                    className="h-10 text-xs font-bold rounded-xl px-5 bg-primary text-slate-950 shadow-[0_0_15px_rgba(0,243,255,0.15)]"
+                  >
+                    {adminActionLoading ? "Enrolling User..." : "Enrolled Admin"}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   )
 }

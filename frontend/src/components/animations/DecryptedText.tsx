@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 
 interface DecryptedTextProps {
   text: string
@@ -16,12 +16,13 @@ export function DecryptedText({
   className = "",
   delay = 0,
   speed = 40,
-  animateOnce: _animateOnce = true,
+  animateOnce = true,
   useHover = false
 }: DecryptedTextProps) {
   const [displayText, setDisplayText] = useState("")
   const [isAnimating, setIsAnimating] = useState(false)
   const [hasAnimated, setHasAnimated] = useState(false)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const triggerAnimation = () => {
     if (isAnimating) return
@@ -29,14 +30,17 @@ export function DecryptedText({
     let frame = 0
     const totalFrames = text.length * 3
     
-    const interval = setInterval(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+    }
+
+    intervalRef.current = setInterval(() => {
       frame++
       
       const nextText = text
         .split("")
         .map((char, index) => {
           if (char === " ") return " "
-          // determine if this character should be decrypted yet
           const threshold = (frame / totalFrames) * text.length
           if (index < threshold) {
             return char
@@ -48,14 +52,15 @@ export function DecryptedText({
       setDisplayText(nextText)
 
       if (frame >= totalFrames) {
-        clearInterval(interval)
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current)
+          intervalRef.current = null
+        }
         setDisplayText(text)
         setIsAnimating(false)
         setHasAnimated(true)
       }
     }, speed)
-
-    return () => clearInterval(interval)
   }
 
   useEffect(() => {
@@ -67,7 +72,14 @@ export function DecryptedText({
     } else {
       setDisplayText(text)
     }
-    return () => clearTimeout(timeoutId)
+
+    return () => {
+      clearTimeout(timeoutId)
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
   }, [text, delay])
 
   const handleMouseEnter = () => {

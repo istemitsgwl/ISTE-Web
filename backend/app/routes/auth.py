@@ -1,46 +1,37 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from app.dependencies import get_current_user, get_db
-from app.schemas.user import UserProfileUpdate, UserProfile
-from google.cloud.firestore_v1 import Client
+import logging
 from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, status
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from app.dependencies import get_current_user, get_mongo_db
+from app.schemas.user import UserProfileUpdate, UserProfile
 
+logger = logging.getLogger("uvicorn")
 router = APIRouter(prefix="/users", tags=["Users & Authentication"])
 
-@router.get("/profile", response_model=UserProfile)
-def get_profile(current_user: dict = Depends(get_current_user)):
+@router.get("/profile")
+async def get_profile(current_user: dict = Depends(get_current_user)):
     """Retrieves the authenticated user's profile metadata."""
     return current_user
 
-@router.put("/profile", response_model=UserProfile)
-def update_profile(
+@router.put("/profile")
+async def update_profile(
     payload: UserProfileUpdate,
     current_user: dict = Depends(get_current_user),
-    db: Client = Depends(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_mongo_db)
 ):
-    """Updates user information (college, phone, branch, enrollment) in Firestore."""
-    uid = current_user.get("uid")
-    
-    update_data = payload.model_dump()
+    """Updates administrative user information in MongoDB."""
+    email = current_user.get("email")
+    update_data = payload.model_dump(exclude_unset=True)
     update_data["updatedAt"] = datetime.utcnow()
     
     try:
-        user_ref = db.collection("users").document(uid)
-        user_doc = user_ref.get()
-        
-        if not user_doc.exists:
-            # First time completing profile
-            update_data["uid"] = uid
-            update_data["email"] = current_user.get("email")
-            update_data["role"] = current_user.get("role", "user")
-            update_data["createdAt"] = datetime.utcnow()
-            user_ref.set(update_data)
-        else:
-            # Existing profile update
-            user_ref.update(update_data)
-            
-        # Get updated document
-        updated_doc = user_ref.get().to_dict()
-        return updated_doc
+        await db.admins.update_one({"email": email}, {"$set": update_data})
+        updated = await db.admins.find_one({"email": email})
+        if updated:
+            updated["id"] = str(updated["_id"])
+            updated.pop("_id", None)
+            return updated
+        return current_user
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

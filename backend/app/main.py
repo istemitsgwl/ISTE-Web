@@ -2,8 +2,8 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routes import auth, events, payments, content, health
-from app.firebase import get_db
+from app.routes import auth, auth_google, admin, events, content, contact, health
+from app.database import init_db_indexes
 
 logger = logging.getLogger("uvicorn")
 
@@ -33,21 +33,21 @@ app.add_middleware(
 
 # Register API Routers
 app.include_router(auth.router, prefix=settings.API_V1_STR)
+app.include_router(auth_google.router, prefix=settings.API_V1_STR)
+app.include_router(admin.router, prefix=settings.API_V1_STR)
 app.include_router(events.router, prefix=settings.API_V1_STR)
-app.include_router(payments.router, prefix=settings.API_V1_STR)
 app.include_router(content.router, prefix=settings.API_V1_STR)
+app.include_router(contact.router, prefix=settings.API_V1_STR)
 app.include_router(health.router, prefix=settings.API_V1_STR)
 
 @app.on_event("startup")
-def startup_firestore_verification():
-    """Verifies Firestore connectivity with a direct minimal read on application boot."""
+async def startup_db_verification():
+    """Initializes MongoDB database indexes on application boot."""
     try:
-        db = get_db()
-        # Minimal startup read test on 'events' collection
-        docs = list(db.collection("events").limit(1).get())
-        logger.info(f"✅ [FIRESTORE READY] Project ID: '{settings.FIREBASE_PROJECT_ID}' | Database: '(default)' | Read verification: SUCCESS ({len(docs)} doc(s) returned)")
+        await init_db_indexes()
+        logger.info("✅ [MONGODB READY] Database indexes initialized successfully.")
     except Exception as e:
-        logger.error(f"❌ [FIRESTORE ERROR] Startup read verification failed for Project ID: '{settings.FIREBASE_PROJECT_ID}'")
+        logger.error("❌ [MONGODB ERROR] Startup index initialization failed.")
         logger.exception(e)
 
 @app.get("/")

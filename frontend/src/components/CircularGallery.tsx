@@ -582,7 +582,20 @@ class App {
       this.medias.forEach((media: any) => media.onResize({ screen: this.screen, viewport: this.viewport }));
     }
   }
+  pause() {
+    this.isPaused = true;
+    if (this.raf) {
+      window.cancelAnimationFrame(this.raf);
+      this.raf = null;
+    }
+  }
+  resume() {
+    if (!this.isPaused) return;
+    this.isPaused = false;
+    this.update();
+  }
   update() {
+    if (this.isPaused) return;
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
     const direction = this.scroll.current > this.scroll.last ? 'right' : 'left';
     if (this.medias) {
@@ -655,6 +668,8 @@ export default function CircularGallery({
   scrollEase = 0.05
 }: CircularGalleryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const appRef = useRef<App | null>(null);
+
   useEffect(() => {
     if (!containerRef.current || !items || items.length === 0) return;
     let app: App;
@@ -675,11 +690,29 @@ export default function CircularGallery({
         scrollSpeed,
         scrollEase
       });
+      appRef.current = app;
     });
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (appRef.current) {
+          if (entry.isIntersecting) {
+            appRef.current.resume();
+          } else {
+            appRef.current.pause();
+          }
+        }
+      },
+      { threshold: 0.01 }
+    );
+
+    observer.observe(containerRef.current);
 
     return () => {
       isMounted = false;
+      observer.disconnect();
       if (app) app.destroy();
+      appRef.current = null;
     };
   }, [items, bend, textColor, borderRadius, font, fontUrl, scrollSpeed, scrollEase]);
 

@@ -1,14 +1,11 @@
 import { useEffect, useState, useRef } from "react"
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
-import { mentors, events } from "@/data/siteData"
 import { ArrowRight, BookOpen, Settings, Zap, GraduationCap, Sparkles } from "lucide-react"
 import ThreeCanvas from "@/components/ThreeCanvas"
 import CircularGallery from "@/components/CircularGallery"
 import { BorderGlowCard } from "@/components/ui/BorderGlowCard"
 import { Button } from "@/components/ui/Button"
-import { db } from "@/lib/firebase"
-import { collection, getDocs } from "firebase/firestore"
 import { SplitText } from "@/components/animations/SplitText"
 import { BlurText } from "@/components/animations/BlurText"
 import { DecryptedText } from "@/components/animations/DecryptedText"
@@ -19,70 +16,75 @@ import { resolveEventImage } from "@/utils/imageResolver"
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [heroItems, setHeroItems] = useState<Array<{ image: string; text: string }>>([])
-  const [homeEvents, setHomeEvents] = useState<any[]>(sortEventsDescending(events).slice(0, 3))
+  const [homeEvents, setHomeEvents] = useState<any[]>([])
+  const [homeMentors, setHomeMentors] = useState<any[]>([])
+  const [loadingEvents, setLoadingEvents] = useState(true)
 
   useEffect(() => {
-    const fetchHomeEvents = async () => {
+    const fetchHomeData = async () => {
+      const apiBase = import.meta.env.VITE_API_URL || "/api"
+      setLoadingEvents(true)
+      
+      // Fetch events
       try {
-        const snap = await getDocs(collection(db, "events"))
-        const data: any[] = []
-        snap.forEach((doc) => {
-          const item = doc.data()
-          if (item) {
-            data.push({ id: doc.id, ...item })
+        const res = await fetch(`${apiBase}/events`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data && data.length > 0) {
+            setHomeEvents(sortEventsDescending(data).slice(0, 3))
           }
-        })
-        if (data.length > 0) {
-          const sorted = sortEventsDescending(data)
-          setHomeEvents(sorted.slice(0, 3))
         }
       } catch (err) {
-        console.warn("Home events fetch failed, using fallback.", err)
+        console.warn("REST events fetch failed for Home page:", err)
+      } finally {
+        setLoadingEvents(false)
+      }
+
+      // Fetch mentors
+      try {
+        const res = await fetch(`${apiBase}/content/mentors`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data && data.length > 0) {
+            setHomeMentors(data)
+          }
+        }
+      } catch (err) {
+        console.warn("REST mentors fetch failed for Home page:", err)
       }
     }
-    fetchHomeEvents()
+    fetchHomeData()
   }, [])
 
   useEffect(() => {
     const fetchHeroImages = async () => {
       try {
-        const snap = await getDocs(collection(db, "gallery"))
-        const allItems: any[] = []
-        snap.forEach((doc) => {
-          const item = doc.data()
-          if (item && item.image) {
-            allItems.push({ id: doc.id, ...item })
-          }
-        })
-
-        // Separate items by Hero Gallery and others
-        const heroFiltered = allItems.filter(
-          item => item.category?.toLowerCase() === "hero gallery"
-        )
-
-        // Deduplicate and combine
-        const combined: any[] = []
-        const addIfUnique = (item: any) => {
-          if (!combined.some(existing => existing.image === item.image || existing.id === item.id)) {
-            combined.push(item)
+        const res = await fetch(`${import.meta.env.VITE_API_URL || "/api"}/content/gallery`)
+        if (res.ok) {
+          const allItems = await res.json()
+          if (allItems && allItems.length > 0) {
+            // Shuffle images randomly on each load
+            const shuffled = [...allItems].sort(() => Math.random() - 0.5)
+            
+            const mapped = shuffled.map((item: any) => ({
+              image: item.image,
+              text: item.title || "ISTE Showcase"
+            }))
+            
+            // Loop items if we have fewer than target (8) for a complete circle
+            const targetCount = 8
+            let finalItems = [...mapped]
+            if (finalItems.length < targetCount && finalItems.length > 0) {
+              while (finalItems.length < targetCount) {
+                finalItems = finalItems.concat(mapped)
+              }
+            }
+            
+            setHeroItems(finalItems)
           }
         }
-
-        heroFiltered.forEach(addIfUnique)
-        allItems.forEach(addIfUnique)
-
-        // Fisher-Yates shuffle algorithm for dynamic random photo showcase
-        const shuffled = [...combined]
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1))
-          ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-        }
-
-        const selected = shuffled.slice(0, 10)
-        setHeroItems(selected.map(item => ({ image: item.image, text: item.title })))
       } catch (err) {
         console.warn("Failed to fetch dynamic hero images.", err)
-        setHeroItems([])
       }
     }
     fetchHeroImages()
@@ -257,7 +259,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {mentors.map((mentor) => (
+            {homeMentors.map((mentor) => (
               <BorderGlowCard
                 key={mentor.id}
                 containerClassName="p-0 overflow-hidden"
@@ -267,15 +269,16 @@ export default function Home() {
                 <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[20px] border border-[rgba(255,255,255,0.45)] dark:border-border/60 bg-white/55 dark:bg-card/45 p-1.5 shadow-[0_8px_30px_rgba(25,50,80,0.06)] dark:shadow-[0_4px_15px_rgb(0,0,0,0.1)] relative flex items-center justify-center shrink-0">
                   <div className="w-full h-full rounded-[14px] overflow-hidden relative">
                     <img
-                      src={mentor.image}
+                      src={mentor.image || mentor.imageUrl}
                       alt={mentor.name}
                       className="w-full h-full object-cover select-none"
+                      loading="lazy"
                     />
                   </div>
                 </div>
                 <div className="flex-1">
                   <p className="text-xs sm:text-sm italic text-muted-foreground mb-4 leading-relaxed font-medium font-serif">
-                    "{mentor.description.replace(/\n/g, ' ')}"
+                    "{(mentor.description || "").replace(/\n/g, ' ')}"
                   </p>
                   <h4 className="text-base sm:text-lg font-extrabold text-foreground font-sans tracking-tight">{mentor.name}</h4>
                   <span className="text-xs font-bold text-primary block mt-0.5 font-sans tracking-wide">{mentor.designation}</span>
@@ -311,42 +314,62 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {homeEvents.map((event) => (
-            <BorderGlowCard
-              key={event.id}
-              containerClassName="p-0 overflow-hidden"
-              className="flex flex-col h-full animate-on-scroll"
-              glowColor="rgba(168, 85, 247, 0.12)"
-            >
-              <div
-                className="h-44 w-full bg-cover bg-center bg-no-repeat relative"
-                style={{ backgroundImage: `url(${resolveEventImage(event.bannerImage || event.image)})` }}
+          {loadingEvents ? (
+            Array.from({ length: 3 }).map((_, idx) => (
+              <div key={idx} className="glass-panel p-0 overflow-hidden flex flex-col h-full border border-border/40 bg-card/25 animate-pulse rounded-[24px]">
+                <div className="h-44 w-full bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40" />
+                <div className="p-5 flex flex-col flex-1 gap-3">
+                  <div className="h-3 w-20 bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 rounded-md" />
+                  <div className="h-5 w-44 bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 rounded-md" />
+                  <div className="h-3 w-full bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 rounded-md" />
+                  <div className="h-3 w-5/6 bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 rounded-md" />
+                  <div className="h-4 w-24 bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 rounded-md mt-4" />
+                </div>
+              </div>
+            ))
+          ) : homeEvents.length === 0 ? (
+            <div className="col-span-1 md:col-span-3 text-center py-12 glass-panel border border-border/80 bg-card/20 rounded-[24px]">
+              <p className="text-sm font-bold text-foreground mb-1">No Upcoming Events Scheduled</p>
+              <p className="text-xs text-muted-foreground">Check back later for official announcements and workshops!</p>
+            </div>
+          ) : (
+            homeEvents.map((event) => (
+              <BorderGlowCard
+                key={event.id}
+                containerClassName="p-0 overflow-hidden"
+                className="flex flex-col h-full animate-on-scroll"
+                glowColor="rgba(168, 85, 247, 0.12)"
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
-                <span className={`absolute top-4 right-4 text-[9px] uppercase font-extrabold px-2.5 py-1 rounded-full ${
-                  event.status === 'upcoming' 
-                    ? 'bg-primary text-slate-950 shadow-[0_0_15px_rgba(0,243,255,0.35)]' 
-                    : 'bg-muted text-muted-foreground border border-border/40'
-                }`}>
-                  {event.status}
-                </span>
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <span className="text-[10px] text-primary font-extrabold uppercase tracking-widest mb-2 block">{event.date}</span>
-                <h3 className="text-base font-extrabold text-foreground mb-2 line-clamp-1 font-serif">{event.title}</h3>
-                <p className="text-muted-foreground text-xs leading-relaxed mb-6 flex-1 line-clamp-3 font-medium">
-                  {event.desc}
-                </p>
-                <Link
-                  to={`/events`}
-                  className="text-xs font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 self-start"
+                <div
+                  className="h-44 w-full bg-cover bg-center bg-no-repeat relative"
+                  style={{ backgroundImage: `url(${resolveEventImage(event.bannerImage || event.image)})` }}
                 >
-                  View Details
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </BorderGlowCard>
-          ))}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
+                  <span className={`absolute top-4 right-4 text-[9px] uppercase font-extrabold px-2.5 py-1 rounded-full ${
+                    event.status === 'upcoming' 
+                      ? 'bg-primary text-slate-950 shadow-[0_0_15px_rgba(0,243,255,0.35)]' 
+                      : 'bg-muted text-muted-foreground border border-border/40'
+                  }`}>
+                    {event.status}
+                  </span>
+                </div>
+                <div className="p-5 flex flex-col flex-1">
+                  <span className="text-[10px] text-primary font-extrabold uppercase tracking-widest mb-2 block">{event.date}</span>
+                  <h3 className="text-base font-extrabold text-foreground mb-2 line-clamp-1 font-serif">{event.title}</h3>
+                  <p className="text-muted-foreground text-xs leading-relaxed mb-6 flex-1 line-clamp-3 font-medium">
+                    {event.desc}
+                  </p>
+                  <Link
+                    to={`/events`}
+                    className="text-xs font-bold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 self-start"
+                  >
+                    View Details
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </BorderGlowCard>
+            ))
+          )}
         </div>
 
         <div className="text-center">

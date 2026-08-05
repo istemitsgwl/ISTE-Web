@@ -9,12 +9,9 @@ import {
   Edit3, CheckCircle2, AlertCircle, Sparkles, Bell, ArrowRight, 
   Search, QrCode, LogOut, ExternalLink, ShieldCheck, Clock, Layers
 } from "lucide-react"
-import { db } from "@/lib/firebase"
-import { collection, query, where, getDocs, doc, setDoc } from "firebase/firestore"
-import { events as staticEvents } from "@/data/siteData"
 import { sortEventsDescending } from "@/utils/eventSorter"
 import { resolveEventImage } from "@/utils/imageResolver"
-import fallbackImage from "@/assets/gallery/iste.jpg"
+import fallbackImage from "@/assets/iste-circular-logo.png"
 
 export default function Dashboard() {
   const { user, logout, setAuth } = useAuthStore()
@@ -62,36 +59,19 @@ export default function Dashboard() {
     
     const fetchDashboardData = async () => {
       setLoading(true)
+      const apiBase = import.meta.env.VITE_API_URL || "/api"
       try {
-        // 1. Fetch user event registrations
-        const regQuery = query(collection(db, "eventRegistrations"), where("userId", "==", user.uid))
-        const regSnap = await getDocs(regQuery)
-        const regList: any[] = []
-        regSnap.forEach((docSnap) => {
-          regList.push({ id: docSnap.id, ...docSnap.data() })
-        })
-        setRegistrations(regList)
-
-        // 2. Fetch user certificates
-        const certQuery = query(collection(db, "certificates"), where("userId", "==", user.uid))
-        const certSnap = await getDocs(certQuery)
-        const certList: any[] = []
-        certSnap.forEach((docSnap) => {
-          certList.push({ id: docSnap.id, ...docSnap.data() })
-        })
-        setCertificates(certList)
-
-        // 3. Fetch recommended upcoming events
-        const eventSnap = await getDocs(collection(db, "events"))
-        const evList: any[] = []
-        eventSnap.forEach((docSnap) => {
-          const ev = docSnap.data()
-          if (ev) evList.push({ id: docSnap.id, ...ev })
-        })
-        const sorted = sortEventsDescending(evList.length > 0 ? evList : staticEvents)
-        setUpcomingEvents(sorted)
+        // Fetch events from REST API
+        const evRes = await fetch(`${apiBase}/events`)
+        if (evRes.ok) {
+          const evList = await evRes.json()
+          setUpcomingEvents(sortEventsDescending(evList))
+        } else {
+          setUpcomingEvents([])
+        }
       } catch (err) {
         console.error("Error fetching student portal metrics:", err)
+        setUpcomingEvents([])
       } finally {
         setLoading(false)
       }
@@ -119,6 +99,7 @@ export default function Dashboard() {
     if (!user) return
     setSavingProfile(true)
     setProfileMessage("")
+    const apiBase = import.meta.env.VITE_API_URL || "/api"
 
     try {
       const updatedProfile = {
@@ -127,12 +108,25 @@ export default function Dashboard() {
         college: profileForm.college.trim() || "MITS Gwalior",
         branch: profileForm.branch,
         year: profileForm.year,
-        enrollmentNo: profileForm.enrollmentNo.trim(),
-        updatedAt: new Date().toISOString()
+        enrollmentNo: profileForm.enrollmentNo.trim()
       }
 
-      await setDoc(doc(db, "users", user.uid), updatedProfile, { merge: true })
-      setAuth({ ...user, ...updatedProfile })
+      const res = await fetch(`${apiBase}/users/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(user?.token ? { Authorization: `Bearer ${user.token}` } : {})
+        },
+        body: JSON.stringify(updatedProfile)
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setAuth({ ...user, ...data })
+      } else {
+        setAuth({ ...user, ...updatedProfile })
+      }
+
       setProfileMessage("✓ Profile details updated successfully!")
       setTimeout(() => {
         setIsEditingProfile(false)
@@ -544,7 +538,7 @@ export default function Dashboard() {
                   <div className="p-4 bg-slate-950/80 rounded-2xl border border-border/80 text-right self-stretch sm:self-auto flex flex-col justify-center">
                     <span className="text-[10px] text-muted-foreground uppercase font-mono">Member Serial</span>
                     <span className="text-sm font-black text-primary font-mono mt-0.5">
-                      ISTE-2025-{user.uid.substr(0, 8).toUpperCase()}
+                      ISTE-2025-{(user.uid || user.id || "MEMBER").substring(0, 8).toUpperCase()}
                     </span>
                   </div>
                 </div>

@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { events as staticEvents } from "@/data/siteData"
 import { Calendar, MapPin, Tag, UserPlus, Info } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/Dialog"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { useAuthStore } from "@/store/authStore"
 import { useNavigate } from "react-router-dom"
-import { db } from "@/lib/firebase"
-import { collection, getDocs } from "firebase/firestore"
 import { BorderGlowCard } from "@/components/ui/BorderGlowCard"
 import { SplitText } from "@/components/animations/SplitText"
 import { BlurText } from "@/components/animations/BlurText"
@@ -27,7 +24,7 @@ export default function Events() {
   const { isAuthenticated, user } = useAuthStore()
   const navigate = useNavigate()
   const [filter, setFilter] = useState("all")
-  const [eventList, setEventList] = useState<any[]>(sortEventsDescending(staticEvents))
+  const [eventList, setEventList] = useState<any[]>([])
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null)
   const [registrationOpen, setRegistrationOpen] = useState(false)
   
@@ -39,16 +36,15 @@ export default function Events() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const snap = await getDocs(collection(db, "events"))
-        const data: any[] = []
-        snap.forEach((doc) => {
-          data.push({ id: doc.id, ...doc.data() })
-        })
-        if (data.length > 0) {
-          setEventList(sortEventsDescending(data))
+        const res = await fetch(`${import.meta.env.VITE_API_URL || "/api"}/events`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data && data.length > 0) {
+            setEventList(sortEventsDescending(data))
+          }
         }
       } catch (err) {
-        console.warn("Dynamic events fetch from Firestore failed. Using client backup.", err)
+        console.warn("REST events fetch failed. Using fallback backup.", err)
       }
     }
     fetchEvents()
@@ -61,11 +57,7 @@ export default function Events() {
     return true
   })
 
-  const handleRegisterClick = (event: typeof staticEvents[0]) => {
-    if (!isAuthenticated) {
-      navigate("/login")
-      return
-    }
+  const handleRegisterClick = (event: any) => {
     setSelectedEvent(event)
     setFormResponses({})
     setFormError("")
@@ -74,21 +66,6 @@ export default function Events() {
 
   const handleInputChange = (fieldName: string, value: string) => {
     setFormResponses((prev) => ({ ...prev, [fieldName]: value }))
-  }
-
-  // Load Razorpay Script dynamically
-  const loadRazorpayScript = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if (window.Razorpay) {
-        resolve(true)
-        return
-      }
-      const script = document.createElement("script")
-      script.src = "https://checkout.razorpay.com/v1/checkout.js"
-      script.onload = () => resolve(true)
-      script.onerror = () => resolve(false)
-      document.body.appendChild(script)
-    })
   }
 
   const validateForm = () => {
@@ -115,23 +92,34 @@ export default function Events() {
 
   const handleRegistrationSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedEvent || !user) return
+    if (!selectedEvent) return
 
     if (!validateForm()) return
 
     setProcessing(true)
 
     try {
-      const registrationId = `ISTE-REG-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
-      setTimeout(() => {
-        setProcessing(false)
-        setRegistrationOpen(false)
-        alert(`Registration Successful for ${selectedEvent.title}!\nRegistration ID: ${registrationId}`)
-        navigate("/dashboard/profile")
-      }, 1000)
-    } catch (err) {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "/api"}/events/${selectedEvent.id}/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(user?.token ? { Authorization: `Bearer ${user.token}` } : {})
+        },
+        body: JSON.stringify(formResponses)
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || "Registration failed")
+      }
+
+      const data = await res.json()
+      setProcessing(false)
+      setRegistrationOpen(false)
+      alert(`Registration Successful for ${selectedEvent.title}!\nRegistration ID: ${data.registrationId || 'ISTE-CONFIRMED'}`)
+    } catch (err: any) {
       console.error(err)
-      alert("Registration failed.")
+      alert(err.message || "Registration failed.")
       setProcessing(false)
     }
   }

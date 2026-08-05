@@ -15,7 +15,7 @@ class CustomFieldSchema(BaseModel):
 
 class EventCreate(BaseModel):
     title: str = Field(..., min_length=2, max_length=150)
-    description: str
+    desc: str
     category: str
     date: str
     venue: str

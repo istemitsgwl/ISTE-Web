@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { mentors as staticMentors } from "@/data/siteData"
 import { Shield, Sparkles, Mail, Linkedin } from "lucide-react"
 import { BorderGlowCard } from "@/components/ui/BorderGlowCard"
 import { SplitText } from "@/components/animations/SplitText"
@@ -11,7 +10,7 @@ import manjreeImg from "@/assets/mentors/manjree-pandit.jpg"
 import vishalImg from "@/assets/mentors/vishal-chaudhary.jpg"
 
 export default function Mentors() {
-  const [mentors, setMentors] = useState<any[]>(staticMentors)
+  const [mentors, setMentors] = useState<any[]>([])
 
   const resolveMentorImage = (m: any) => {
     const name = (m.name || "").toLowerCase()
@@ -22,7 +21,7 @@ export default function Mentors() {
   }
 
   useEffect(() => {
-    // Dynamic fetch from Firestore via FastAPI
+    // Dynamic fetch from MongoDB Atlas via FastAPI
     const fetchMentors = async () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/content/mentors`)

@@ -1,7 +1,10 @@
-from fastapi import Depends, HTTPException, status, Header
-from app.firebase import verify_token, get_db
-from google.cloud.firestore_v1 import Client
 import logging
+import jwt
+from fastapi import Depends, HTTPException, status, Header
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from bson import ObjectId
+from app.config import settings
+from app.database import get_mongo_db, get_mongo_db as get_db
 
 logger = logging.getLogger("uvicorn")
 
@@ -14,44 +17,52 @@ def get_token_from_header(authorization: str = Header(...)) -> str:
         )
     return authorization.split(" ")[1]
 
-def get_current_user(
+async def get_current_user(
     token: str = Depends(get_token_from_header),
-    db: Client = Depends(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_mongo_db)
 ) -> dict:
-    """Verifies Firebase token and loads user profile from Firestore."""
-    decoded = verify_token(token)
-    if not decoded:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired authentication credentials",
-        )
-    
-    uid = decoded.get("uid") or decoded.get("user_id")
-    if not uid:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token payload missing user identifier",
-        )
-        
+    """Decodes custom JWT access token and verifies active session in MongoDB."""
     try:
-        user_doc = db.collection("users").document(uid).get()
-        if user_doc.exists:
-            return user_doc.to_dict()
-    except Exception as e:
-        logger.exception("User profile Firestore fetch failed:")
-    
-    return {
-        "uid": uid,
-        "email": decoded.get("email", ""),
-        "name": decoded.get("name", decoded.get("email", "").split("@")[0]),
-        "role": "admin" if ("admin" in decoded.get("email", "") or decoded.get("email") == "shivampatidar780@gmail.com") else "user"
-    }
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        email = payload.get("email")
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token payload missing user identifier"
+            )
+            
+        admin_doc = await db.admins.find_one({"email": email})
+        if not admin_doc or admin_doc.get("status") != "active":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User account is inactive or revoked"
+            )
+            
+        admin_doc["id"] = str(admin_doc["_id"])
+        return admin_doc
+    except jwt.PyJWTError as e:
+        logger.warning(f"JWT Token validation failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired authentication credentials"
+        )
 
-def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
-    """Asserts that the authenticated user possesses administrative privileges."""
-    if current_user.get("role") != "admin":
+async def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
+    """Asserts that authenticated user has Super Admin or Admin privileges."""
+    user_role = (current_user.get("role") or "").lower()
+    if user_role not in ["super_admin", "admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Administrative privileges required to access this resource",
+        )
+    return current_user
+
+async def require_super_admin(current_user: dict = Depends(get_current_user)) -> dict:
+    """Asserts that authenticated user has Super Admin privileges."""
+    user_role = (current_user.get("role") or "").lower()
+    if user_role != "super_admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super Admin privileges required to perform this action",
         )
     return current_user

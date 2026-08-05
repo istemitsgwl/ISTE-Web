@@ -19,10 +19,10 @@ export function BorderGlowCard({
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
 
-  function handleMouseMove({ currentTarget, clientX, clientY }: MouseEvent) {
-    const { left, top } = currentTarget.getBoundingClientRect()
-    mouseX.set(clientX - left)
-    mouseY.set(clientY - top)
+  function handleMouseMove(e: MouseEvent) {
+    if (window.innerWidth < 768) return
+    mouseX.set(e.nativeEvent.offsetX)
+    mouseY.set(e.nativeEvent.offsetY)
   }
 
   return (

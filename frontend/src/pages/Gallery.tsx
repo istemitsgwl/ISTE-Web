@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Maximize2, X, ChevronLeft, ChevronRight, Sparkles, Image as ImageIcon, Loader2 } from "lucide-react"
-import { db } from "@/lib/firebase"
-import { collection, getDocs } from "firebase/firestore"
 import { BorderGlowCard } from "@/components/ui/BorderGlowCard"
 import { SplitText } from "@/components/animations/SplitText"
 import { BlurText } from "@/components/animations/BlurText"
 import { DecryptedText } from "@/components/animations/DecryptedText"
 import { ScrollReveal } from "@/components/animations/ScrollReveal"
-import fallbackImage from "@/assets/gallery/iste.jpg"
+import isteCircular from "@/assets/iste-circular-logo.png"
+import { optimizeCloudinaryUrl } from "@/utils/imageResolver"
+
 
 export default function Gallery() {
   const [filter, setFilter] = useState("all")
@@ -17,26 +17,27 @@ export default function Gallery() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let active = true
     const fetchGallery = async () => {
       setLoading(true)
       try {
-        const snap = await getDocs(collection(db, "gallery"))
-        const data: any[] = []
-        snap.forEach((doc) => {
-          const item = doc.data()
-          if (item && item.image) {
-            data.push({ id: doc.id, ...item })
+        const res = await fetch(`${import.meta.env.VITE_API_URL || "/api"}/content/gallery`)
+        if (res.ok && active) {
+          const data = await res.json()
+          if (data && data.length > 0) {
+            setGalleryItems(data)
           }
-        })
-        setGalleryItems(data)
+        }
       } catch (err) {
-        console.warn("Could not retrieve dynamic gallery items from Firestore:", err)
-        setGalleryItems([])
+        console.warn("REST gallery fetch failed. Using fallback.", err)
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
     fetchGallery()
+    return () => {
+      active = false
+    }
   }, [])
 
   const categories = ["all", "Events", "Talks", "Team", "Workshops", "Awards"]
@@ -166,11 +167,12 @@ export default function Gallery() {
                 <div className="p-2 bg-white/55 dark:bg-card/40 rounded-[24px] border border-[rgba(255,255,255,0.45)] dark:border-border/20 shadow-[0_12px_40px_rgba(25,50,80,0.08)] transition-all hover:translate-y-[-10px] hover:scale-[1.02] hover:shadow-[0_20px_50px_rgba(25,50,80,0.12)] duration-500 group aspect-[4/3] relative overflow-hidden">
                   <div className="w-full h-full rounded-[16px] overflow-hidden relative">
                     <img
-                      src={item.image}
+                      src={optimizeCloudinaryUrl(item.image, "c_fill,w_400,h_300,q_auto,f_auto")}
                       alt={item.title}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 select-none"
                       onError={(e) => {
-                        e.currentTarget.src = fallbackImage
+                        e.currentTarget.src = isteCircular
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
@@ -222,11 +224,11 @@ export default function Gallery() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3 }}
-                src={filteredItems[lightboxIndex].image}
+                src={optimizeCloudinaryUrl(filteredItems[lightboxIndex].image, "w_1200,q_auto,f_auto")}
                 alt={filteredItems[lightboxIndex].title}
                 className="max-w-full max-h-[70vh] object-contain rounded-2xl border border-white/10"
                 onError={(e) => {
-                  e.currentTarget.src = fallbackImage
+                  e.currentTarget.src = isteCircular
                 }}
               />
               <div className="mt-4 text-center">

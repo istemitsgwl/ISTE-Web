@@ -2,8 +2,6 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { faqs as staticFaqs } from "@/data/siteData"
 import { ChevronDown, HelpCircle, Sparkles } from "lucide-react"
-import { db } from "@/lib/firebase"
-import { collection, getDocs } from "firebase/firestore"
 import { SplitText } from "@/components/animations/SplitText"
 import { BlurText } from "@/components/animations/BlurText"
 import { DecryptedText } from "@/components/animations/DecryptedText"
@@ -16,18 +14,15 @@ export default function Faqs() {
   useEffect(() => {
     const fetchFaqs = async () => {
       try {
-        const snap = await getDocs(collection(db, "faqs"))
-        const data: any[] = []
-        snap.forEach((doc) => {
-          data.push({ id: doc.id, ...doc.data() })
-        })
-        if (data.length > 0) {
-          setFaqList(data)
-        } else {
-          setFaqList(staticFaqs)
+        const res = await fetch(`${import.meta.env.VITE_API_URL || "/api"}/content/faqs`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data && data.length > 0) {
+            setFaqList(data)
+          }
         }
       } catch (err) {
-        console.warn("Could not fetch FAQs from Firestore. Using static backup.", err)
+        console.warn("REST FAQs fetch failed, using fallback.", err)
       }
     }
     fetchFaqs()

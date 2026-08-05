@@ -8,7 +8,7 @@ export const sortEventsDescending = (eventsList: any[]): any[] => {
     const rawDate = ev.eventDate || ev.date
     if (!rawDate) return 0
 
-    // Handle Firestore Timestamp objects (.toDate())
+    // Handle legacy Firestore Timestamp objects for backward compatibility
     if (typeof rawDate === "object" && typeof rawDate.toDate === "function") {
       return rawDate.toDate().getTime()
     }

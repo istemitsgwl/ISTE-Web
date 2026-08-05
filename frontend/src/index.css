@@ -176,14 +176,11 @@
     color: var(--primary);
   }
   
-  /* Global smooth transition for theme change */
-  html, body, header, footer, main, .glass-panel, .card, select, input, textarea, button, p, span, h1, h2, h3, h4, h5, h6, a, svg {
-    transition: color 700ms cubic-bezier(0.4, 0, 0.2, 1), 
-                background-color 700ms cubic-bezier(0.4, 0, 0.2, 1), 
-                border-color 700ms cubic-bezier(0.4, 0, 0.2, 1), 
-                box-shadow 700ms cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 700ms cubic-bezier(0.4, 0, 0.2, 1),
-                transform 700ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Smooth transition for theme changes on body and container classes */
+  body, .glass-panel, .card {
+    transition: color 300ms cubic-bezier(0.4, 0, 0.2, 1), 
+                background-color 300ms cubic-bezier(0.4, 0, 0.2, 1), 
+                border-color 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
@@ -238,5 +235,29 @@
   }
   100% {
     background-position: -100% 0;
+  }
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Mobile GPU & Paint Optimization for INP */
+@media (max-width: 768px) {
+  :root {
+    --glass-blur: 6px;
+  }
+  .glass-panel, .glass-card-hover {
+    will-change: auto !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
   }
 }

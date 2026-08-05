@@ -1,13 +1,14 @@
-import { useRef, useMemo, useEffect } from "react"
+import { useRef, useMemo, useEffect, useState } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import * as THREE from "three"
 import { useTheme } from "@/context/ThemeContext"
 
 interface ParticleGridProps {
   theme: string
+  isMobile: boolean
 }
 
-function ParticleGrid({ theme }: ParticleGridProps) {
+function ParticleGrid({ theme, isMobile }: ParticleGridProps) {
   const pointsRef = useRef<THREE.Points>(null)
   
   // Custom shader uniforms
@@ -28,9 +29,9 @@ function ParticleGrid({ theme }: ParticleGridProps) {
 
   // Create grid vertices
   const [positions, count] = useMemo(() => {
-    const width = 30
-    const depth = 30
-    const spacing = 1.2
+    const width = isMobile ? 16 : 30
+    const depth = isMobile ? 16 : 30
+    const spacing = isMobile ? 2.2 : 1.2
     const tempPositions: number[] = []
     
     for (let x = 0; x < width; x++) {
@@ -41,13 +42,13 @@ function ParticleGrid({ theme }: ParticleGridProps) {
       }
     }
     return [new Float32Array(tempPositions), width * depth]
-  }, [])
+  }, [isMobile])
 
   useFrame((state) => {
     const time = state.clock.getElapsedTime()
     if (pointsRef.current) {
       // Rotate grid slowly
-      pointsRef.current.rotation.y = time * 0.05
+      pointsRef.current.rotation.y = time * 0.04
       
       // Update shader time uniform
       const material = pointsRef.current.material as THREE.ShaderMaterial
@@ -92,7 +93,7 @@ function ParticleGrid({ theme }: ParticleGridProps) {
 
   return (
     <points ref={pointsRef}>
-      <bufferGeometry>
+      <bufferGeometry attach="geometry">
         <bufferAttribute
           attach="attributes-position"
           args={[positions, 3]}
@@ -112,16 +113,47 @@ function ParticleGrid({ theme }: ParticleGridProps) {
 
 export default function ThreeCanvas() {
   const { theme } = useTheme()
+  const [isMobile, setIsMobile] = useState(false)
+  const [isInView, setIsInView] = useState(true)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Detect mobile screens
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+
+    // Setup viewport intersection observer
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting)
+      },
+      { threshold: 0.01 }
+    )
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current)
+    }
+
+    return () => {
+      window.removeEventListener("resize", checkMobile)
+      observer.disconnect()
+    }
+  }, [])
 
   return (
-    <div className="absolute inset-0 -z-10 w-full h-full pointer-events-none overflow-hidden bg-background">
+    <div ref={containerRef} className="absolute inset-0 -z-10 w-full h-full pointer-events-none overflow-hidden bg-background">
       <Canvas
         camera={{ position: [0, 10, 22], fov: 60 }}
+        dpr={isMobile ? 1 : [1, 1.5]}
+        frameloop={isInView ? "always" : "never"}
         style={{ width: "100%", height: "100%", position: "absolute" }}
       >
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} intensity={1.5} />
-        <ParticleGrid theme={theme} />
+        <ParticleGrid theme={theme} isMobile={isMobile} />
       </Canvas>
     </div>
   )

@@ -6,70 +6,41 @@ import { SplitText } from "@/components/animations/SplitText"
 import { BlurText } from "@/components/animations/BlurText"
 import { DecryptedText } from "@/components/animations/DecryptedText"
 import { ScrollReveal } from "@/components/animations/ScrollReveal"
-import { db } from "@/lib/firebase"
-import { collection, getDocs } from "firebase/firestore"
-import fallbackImage from "@/assets/gallery/iste.jpg"
+import fallbackImage from "@/assets/iste-circular-logo.png"
+import { optimizeCloudinaryUrl } from "@/utils/imageResolver"
 
 export default function Team() {
   const [committees, setCommittees] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener("resize", checkMobile)
+    return () => window.removeEventListener("resize", checkMobile)
+  }, [])
+
+  useEffect(() => {
+    let active = true
     const fetchTeam = async () => {
       setLoading(true)
       try {
-        const snap = await getDocs(collection(db, "team"))
-        const allMembers: any[] = []
-        snap.forEach((doc) => {
-          allMembers.push({ id: doc.id, ...doc.data() })
-        })
-
-        const uniqueMap = new Map<string, any>()
-
-        if (allMembers.length > 0) {
-          allMembers.forEach((m) => {
-            const nameKey = (m.name || "").toLowerCase().trim()
-            if (nameKey && !uniqueMap.has(nameKey)) {
-              uniqueMap.set(nameKey, m)
-            }
-          })
-
-          const uniqueMembers = Array.from(uniqueMap.values())
-
-          const COMMITTEE_ORDER = [
-            "Accounts Committee",
-            "Technical Committee",
-            "Public Relation Committee",
-            "Marketing Committee",
-            "Graphics Committee",
-            "Management Committee",
-            "Logistics Committee",
-            "Content Committee"
-          ]
-
-          const fetchedCommittees = Array.from(new Set(uniqueMembers.map(m => m.committee || "General Committee")))
-          const allCommitteeTitles = [
-            ...COMMITTEE_ORDER,
-            ...fetchedCommittees.filter(c => c && !COMMITTEE_ORDER.includes(c))
-          ]
-
-          const grouped = allCommitteeTitles.map(title => {
-            const members = uniqueMembers.filter(m => m.committee === title)
-            return { title, members }
-          }).filter(c => c.members.length > 0)
-
-          setCommittees(grouped)
-        } else {
-          setCommittees([])
+        const res = await fetch(`${import.meta.env.VITE_API_URL || "/api"}/content/committees`)
+        if (res.ok && active) {
+          const data = await res.json()
+          setCommittees(data || [])
         }
       } catch (err) {
-        console.warn("Could not retrieve dynamic team members from Firestore:", err)
-        setCommittees([])
+        console.warn("REST committees fetch failed.", err)
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
     fetchTeam()
+    return () => {
+      active = false
+    }
   }, [])
 
   return (
@@ -104,7 +75,7 @@ export default function Team() {
           </h1>
           <ScrollReveal delay={0.2} yOffset={15}>
             <p className="text-muted-foreground mt-6 max-w-2xl mx-auto leading-relaxed text-base sm:text-lg font-medium">
-              Meet the student architects behind ISTE MITS Gwalior. From code compilation to budget orchestration, these committees power our operations.
+              Meet the student student architects behind ISTE MITS Gwalior. From code compilation to budget orchestration, these committees power our operations.
             </p>
           </ScrollReveal>
         </div>
@@ -149,74 +120,87 @@ export default function Team() {
 
                 {/* Members Grid */}
                 <div className="flex flex-wrap justify-center gap-6">
-                  {committee.members.map((member: any, mIndex: number) => (
-                    <motion.div
-                      key={member.id || member.name}
-                      initial={{ opacity: 0, y: 25 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.5, delay: mIndex * 0.05 }}
-                      className="w-full sm:w-[260px] md:w-[265px] h-full flex-shrink-0"
-                    >
-                      <GlareHover
-                        glareColor="#CF9FFF"
-                        glareOpacity={0.22}
-                        glareAngle={-35}
-                        glareSize={280}
-                        transitionDuration={900}
-                        playOnce={false}
-                        className="h-full bg-card/60 dark:bg-card/40 backdrop-blur-sm border border-border/60"
-                      >
-                        <div className="flex flex-col items-center text-center p-6 h-full">
-                          {/* Avatar */}
-                          <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full shrink-0 border border-[rgba(255,255,255,0.45)] dark:border-border/60 bg-white/55 dark:bg-card/45 p-1.5 shadow-[0_8px_30px_rgba(25,50,80,0.06)] dark:shadow-[0_4px_15px_rgb(0,0,0,0.1)] relative flex items-center justify-center mb-4">
-                            <div className="w-full h-full rounded-full overflow-hidden relative">
-                              <img
-                                src={member.img || fallbackImage}
-                                alt={member.name}
-                                onError={(e) => {
-                                  e.currentTarget.src = fallbackImage
-                                }}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 select-none"
-                              />
-                            </div>
-                          </div>
-
-                          <h4 className="font-extrabold text-foreground text-sm sm:text-base group-hover:text-primary transition-colors">
-                            {member.name}
-                          </h4>
-                          
-                          <span className="text-[10px] sm:text-xs text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mt-2 mb-6 block">
-                            {member.role}
-                          </span>
-
-                          {/* Social Handles */}
-                          <div className="flex items-center gap-3 mt-auto pt-2">
-                            {member.linkedin && (
-                              <a
-                                href={member.linkedin}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="p-2 rounded-xl bg-muted/40 hover:bg-muted border border-border/40 text-muted-foreground hover:text-primary hover:border-primary/40 transition-all duration-300"
-                                aria-label="LinkedIn"
-                              >
-                                <Linkedin className="w-4 h-4" />
-                              </a>
-                            )}
-                            {member.email && (
-                              <a
-                                href={`mailto:${member.email}`}
-                                className="p-2 rounded-xl bg-muted/40 hover:bg-muted border border-border/40 text-muted-foreground hover:text-secondary hover:border-secondary/40 transition-all duration-300"
-                                aria-label="Email"
-                              >
-                                <Mail className="w-4 h-4" />
-                              </a>
-                            )}
+                  {committee.members.map((member: any, mIndex: number) => {
+                    const cardContent = (
+                      <div className="flex flex-col items-center text-center p-6 h-full">
+                        {/* Avatar */}
+                        <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full shrink-0 border border-[rgba(255,255,255,0.45)] dark:border-border/60 bg-white/55 dark:bg-card/45 p-1.5 shadow-[0_8px_30px_rgba(25,50,80,0.06)] dark:shadow-[0_4px_15px_rgb(0,0,0,0.1)] relative flex items-center justify-center mb-4">
+                          <div className="w-full h-full rounded-full overflow-hidden relative">
+                            <img
+                              src={optimizeCloudinaryUrl(member.image, "c_fill,w_300,h_300,g_face,q_auto,f_auto") || fallbackImage}
+                              alt={member.name}
+                              loading="lazy"
+                              onError={(e) => {
+                                e.currentTarget.src = fallbackImage
+                              }}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 select-none"
+                            />
                           </div>
                         </div>
-                      </GlareHover>
-                    </motion.div>
-                  ))}
+
+                        <h4 className="font-extrabold text-foreground text-sm sm:text-base group-hover:text-primary transition-colors">
+                          {member.name}
+                        </h4>
+                        
+                        <span className="text-[10px] sm:text-xs text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider mt-2 mb-6 block">
+                          {member.role}
+                        </span>
+
+                        {/* Social Handles */}
+                        <div className="flex items-center gap-3 mt-auto pt-2">
+                          {member.linkedin && (
+                            <a
+                              href={member.linkedin}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-2 rounded-xl bg-muted/40 hover:bg-muted border border-border/40 text-muted-foreground hover:text-primary hover:border-primary/40 transition-all duration-300"
+                              aria-label="LinkedIn"
+                            >
+                              <Linkedin className="w-4 h-4" />
+                            </a>
+                          )}
+                          {member.email && (
+                            <a
+                              href={`mailto:${member.email}`}
+                              className="p-2 rounded-xl bg-muted/40 hover:bg-muted border border-border/40 text-muted-foreground hover:text-secondary hover:border-secondary/40 transition-all duration-300"
+                              aria-label="Email"
+                            >
+                              <Mail className="w-4 h-4" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )
+
+                    return (
+                      <motion.div
+                        key={member.id || member.name}
+                        initial={{ opacity: 0, y: 25 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5, delay: mIndex * 0.05 }}
+                        className="w-full sm:w-[260px] md:w-[265px] h-full flex-shrink-0"
+                      >
+                        {isMobile ? (
+                          <div className="h-full bg-card/60 dark:bg-card/45 backdrop-blur-sm border border-border/60 rounded-2xl shadow-md">
+                            {cardContent}
+                          </div>
+                        ) : (
+                          <GlareHover
+                            glareColor="#CF9FFF"
+                            glareOpacity={0.22}
+                            glareAngle={-35}
+                            glareSize={280}
+                            transitionDuration={900}
+                            playOnce={false}
+                            className="h-full bg-card/60 dark:bg-card/40 backdrop-blur-sm border border-border/60"
+                          >
+                            {cardContent}
+                          </GlareHover>
+                        )}
+                      </motion.div>
+                    )
+                  })}
                 </div>
               </div>
             ))}
