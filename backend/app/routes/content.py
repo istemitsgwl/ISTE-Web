@@ -16,7 +16,7 @@ STATIC_MENTORS = [
         "designation": "Pro Vice-Chancellor, Faculty of Engineering & Technology & Chairperson, ISTE Chapter MITS-DU",
         "description": "Dr. Manjree Pandit provides visionary leadership to ISTE MITS, ensuring that the society aligns with professional standards and industry expectations.",
         "longDescription": "Dr. Manjree Pandit provides visionary leadership to ISTE MITS, ensuring that the society aligns with professional standards and industry expectations.\n\nHer mentorship inspires students to pursue innovation, ethical practices, and continuous growth.",
-        "image": "/src/assets/mentors/manjree-pandit.jpg",
+        "image": "/assets/mentors/manjree-pandit.jpg",
         "quote": "Engineering education must empower students to innovate with integrity, purpose, and impact.",
         "email": "manjree.pandit@mitsgwalior.in",
         "linkedin": "https://linkedin.com"
@@ -27,7 +27,7 @@ STATIC_MENTORS = [
         "designation": "Proctor & Faculty Advisor, ISTE Student's Chapter MITS-DU",
         "description": "Dr. Vishal Chaudhary plays a pivotal role in shaping the academic and technical direction of ISTE MITS.",
         "longDescription": "Dr. Vishal Chaudhary plays a pivotal role in shaping the academic and technical direction of ISTE MITS. With strong expertise in engineering education and student mentoring, he actively promotes innovation, discipline, and excellence.",
-        "image": "/src/assets/mentors/vishal-chaudhary.jpg",
+        "image": "/assets/mentors/vishal-chaudhary.jpg",
         "quote": "Technical excellence is achieved when theoretical knowledge is put into practice through hands-on innovation.",
         "email": "vishal.chaudhary@mitsgwalior.in",
         "linkedin": "https://linkedin.com"

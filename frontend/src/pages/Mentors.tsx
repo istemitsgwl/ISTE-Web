@@ -13,10 +13,12 @@ export default function Mentors() {
   const [mentors, setMentors] = useState<any[]>([])
 
   const resolveMentorImage = (m: any) => {
+    if (m.image && (m.image.startsWith("http://") || m.image.startsWith("https://") || m.image.startsWith("data:"))) {
+      return m.image
+    }
     const name = (m.name || "").toLowerCase()
     if (name.includes("manjree")) return manjreeImg
     if (name.includes("vishal")) return vishalImg
-    if (m.image && !m.image.includes("unsplash.com") && !m.image.startsWith("/assets/")) return m.image
     return m.id === 1 ? manjreeImg : vishalImg
   }
 
