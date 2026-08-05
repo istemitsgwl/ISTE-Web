@@ -512,16 +512,24 @@ class App {
       });
     });
   }
+  lastScrollY: number = 0;
+  boundOnWindowScroll: any;
+
   onTouchDown(e: any) {
     this.isDown = true;
     this.scroll.position = this.scroll.current;
-    this.start = e.touches ? e.touches[0].clientX : e.clientX;
+    const touch = e.touches ? e.touches[0] : e;
+    this.start = touch.clientX;
+    this.startY = touch.clientY;
   }
   onTouchMove(e: any) {
     if (!this.isDown) return;
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const distance = (this.start - x) * (this.scrollSpeed * 0.025);
-    this.scroll.target = this.scroll.position + distance;
+    const touch = e.touches ? e.touches[0] : e;
+    const x = touch.clientX;
+    const y = touch.clientY;
+    const distanceX = (this.start - x) * (this.scrollSpeed * 0.025);
+    const distanceY = (this.startY - y) * (this.scrollSpeed * 0.015);
+    this.scroll.target = this.scroll.position + distanceX + distanceY;
   }
   onTouchUp() {
     this.isDown = false;
@@ -531,6 +539,14 @@ class App {
     const delta = e.deltaY || e.wheelDelta || e.detail;
     this.scroll.target += (delta > 0 ? this.scrollSpeed : -this.scrollSpeed) * 0.2;
     this.onCheckDebounce();
+  }
+  onWindowScroll() {
+    const currentScrollY = window.scrollY || window.pageYOffset || 0;
+    const delta = currentScrollY - (this.lastScrollY || 0);
+    this.lastScrollY = currentScrollY;
+    if (Math.abs(delta) > 0.2) {
+      this.scroll.target += delta * 0.06;
+    }
   }
   onKeyDown(e: any) {
     switch (e.key) {
@@ -596,6 +612,12 @@ class App {
   }
   update() {
     if (this.isPaused) return;
+
+    // Smooth continuous auto-rotation drift when not actively dragging with touch
+    if (!this.isDown) {
+      this.scroll.target += 0.15;
+    }
+
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
     const direction = this.scroll.current > this.scroll.last ? 'right' : 'left';
     if (this.medias) {
@@ -612,15 +634,17 @@ class App {
     this.boundOnTouchMove = this.onTouchMove.bind(this);
     this.boundOnTouchUp = this.onTouchUp.bind(this);
     this.boundOnKeyDown = this.onKeyDown.bind(this);
+    this.boundOnWindowScroll = this.onWindowScroll.bind(this);
 
     window.addEventListener('resize', this.boundOnResize);
     window.addEventListener('mousewheel', this.boundOnWheel);
     window.addEventListener('wheel', this.boundOnWheel);
+    window.addEventListener('scroll', this.boundOnWindowScroll, { passive: true });
     window.addEventListener('mousedown', this.boundOnTouchDown);
     window.addEventListener('mousemove', this.boundOnTouchMove);
     window.addEventListener('mouseup', this.boundOnTouchUp);
-    window.addEventListener('touchstart', this.boundOnTouchDown);
-    window.addEventListener('touchmove', this.boundOnTouchMove);
+    window.addEventListener('touchstart', this.boundOnTouchDown, { passive: true });
+    window.addEventListener('touchmove', this.boundOnTouchMove, { passive: true });
     window.addEventListener('touchend', this.boundOnTouchUp);
 
     this.container?.addEventListener('keydown', this.boundOnKeyDown);
@@ -630,6 +654,7 @@ class App {
     window.removeEventListener('resize', this.boundOnResize);
     window.removeEventListener('mousewheel', this.boundOnWheel);
     window.removeEventListener('wheel', this.boundOnWheel);
+    window.removeEventListener('scroll', this.boundOnWindowScroll);
     window.removeEventListener('mousedown', this.boundOnTouchDown);
     window.removeEventListener('mousemove', this.boundOnTouchMove);
     window.removeEventListener('mouseup', this.boundOnTouchUp);
