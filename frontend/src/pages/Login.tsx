@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "@/store/authStore"
 import { useTheme } from "@/context/ThemeContext"
 import { motion } from "framer-motion"
-import { Shield, Sparkles, ArrowRight, Loader2, AlertCircle } from "lucide-react"
-import { Button } from "@/components/ui/Button"
+import { Shield, Loader2, AlertCircle } from "lucide-react"
 import isteStandaloneLogo from "@/assets/iste-standalone-logo.png"
 import isteStandaloneLogoLight from "@/assets/iste-standalone-logo-light.png"
 
@@ -17,12 +16,10 @@ declare global {
 
 export default function Login() {
   const navigate = useNavigate()
-  const { googleLogin, adminDirectLogin, user, isAuthenticated } = useAuthStore()
+  const { googleLogin, user, isAuthenticated } = useAuthStore()
   const { theme } = useTheme()
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
-  const [loginMode, setLoginMode] = useState<"direct" | "google">("direct")
-  const [adminEmail, setAdminEmail] = useState("shivampatidar780@gmail.com")
 
   useEffect(() => {
     if (isAuthenticated && user && (user.role === "super_admin" || user.role === "admin")) {
@@ -36,6 +33,7 @@ export default function Login() {
       if (!active) return
       if (window.google?.accounts?.id) {
         const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "1009258419935-1dgi30dfn1ev51v3gs4145cu26ibclmq.apps.googleusercontent.com"
+        
         if (!window.__google_gsi_initialized) {
           window.google.accounts.id.initialize({
             client_id: clientId,
@@ -56,17 +54,21 @@ export default function Login() {
           })
           window.__google_gsi_initialized = true
         }
+
         const btnElement = document.getElementById("google-signin-btn")
         if (btnElement && btnElement.children.length === 0) {
           window.google.accounts.id.renderButton(btnElement, {
-            theme: "outline",
+            type: "standard",
+            theme: "filled_black",
             size: "large",
             width: "360",
-            text: "continue_with"
+            text: "continue_with",
+            shape: "pill",
+            logo_alignment: "left"
           })
         }
       } else {
-        setTimeout(initGoogleSignIn, 150)
+        setTimeout(initGoogleSignIn, 100)
       }
     }
 
@@ -89,24 +91,6 @@ export default function Login() {
     }
   }, [googleLogin, navigate])
 
-  const handleDirectLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!adminEmail.trim()) {
-      setErrorMessage("Please enter a valid admin email address.")
-      return
-    }
-    setLoading(true)
-    setErrorMessage("")
-    try {
-      await adminDirectLogin(adminEmail)
-      navigate("/admin/dashboard")
-    } catch (err: any) {
-      setErrorMessage(err?.message || "Login failed. Verify email authorization.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <div className="relative min-h-[90vh] flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8 bg-background selection:bg-primary selection:text-primary-foreground overflow-hidden">
       {/* 1. Grid Tech Overlay */}
@@ -126,7 +110,8 @@ export default function Login() {
 
         <div className="glass-panel p-8 sm:p-10 rounded-3xl border border-white/10 dark:border-white/5 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.85)] relative overflow-hidden backdrop-blur-2xl group hover:border-primary/30 transition-all duration-500">
           
-          <div className="flex flex-col items-center text-center mb-6 relative z-10">
+          {/* Header */}
+          <div className="flex flex-col items-center text-center mb-8 relative z-10">
             <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-b from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center p-3 mb-5 shadow-[0_0_30px_rgba(0,243,255,0.2)]">
               <img
                 src={theme === "light" ? isteStandaloneLogoLight : isteStandaloneLogo}
@@ -144,34 +129,8 @@ export default function Login() {
               ISTE MITS Admin Portal
             </h1>
             <p className="text-[11px] text-muted-foreground mt-1.5 max-w-xs font-medium">
-              Authorized login portal for Super Admin & Chapter Leadership.
+              Sign in with your authorized institutional Google account to access administrative features.
             </p>
-          </div>
-
-          {/* Authentication Mode Switcher */}
-          <div className="flex rounded-xl bg-muted/30 p-1 mb-6 border border-border/40 relative z-10">
-            <button
-              type="button"
-              onClick={() => { setLoginMode("direct"); setErrorMessage(""); }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                loginMode === "direct"
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Admin Access
-            </button>
-            <button
-              type="button"
-              onClick={() => { setLoginMode("google"); setErrorMessage(""); }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                loginMode === "google"
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Google Auth
-            </button>
           </div>
 
           {errorMessage && (
@@ -185,54 +144,17 @@ export default function Login() {
             </motion.div>
           )}
 
-          {/* Direct Admin Login Form */}
-          {loginMode === "direct" ? (
-            <form onSubmit={handleDirectLogin} className="space-y-4 relative z-10">
-              <div>
-                <label className="block text-xs font-bold text-foreground/80 mb-1.5">
-                  Admin Email Address
-                </label>
-                <input
-                  type="email"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  placeholder="shivampatidar780@gmail.com"
-                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-background/50 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary font-medium"
-                  required
-                />
+          {/* Main Professional Continue with Google Option */}
+          <div className="flex flex-col items-center justify-center min-h-[60px] w-full relative z-10 my-4">
+            {loading ? (
+              <div className="flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-full bg-primary/10 border border-primary/20 text-xs font-bold text-primary animate-pulse w-full max-w-[360px]">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                <span>Authenticating with Google...</span>
               </div>
-
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:brightness-110 shadow-lg flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Authenticating Admin...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Sign In to Admin Dashboard</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </Button>
-            </form>
-          ) : (
-            /* Google Sign-In Container */
-            <div className="flex flex-col items-center justify-center min-h-[50px] w-full relative z-10">
-              {loading ? (
-                <div className="flex items-center justify-center gap-2.5 py-3 px-6 rounded-full bg-primary/5 border border-primary/20 text-xs font-bold text-primary animate-pulse">
-                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                  <span>Verifying Google Token...</span>
-                </div>
-              ) : (
-                <div id="google-signin-btn" className="w-full flex justify-center z-30 pointer-events-auto rounded-xl overflow-hidden" />
-              )}
-            </div>
-          )}
+            ) : (
+              <div id="google-signin-btn" className="w-full flex justify-center z-30 pointer-events-auto rounded-full overflow-hidden" />
+            )}
+          </div>
 
           {/* Footer Note */}
           <div className="mt-8 text-center pt-6 border-t border-border/40 relative z-10">
