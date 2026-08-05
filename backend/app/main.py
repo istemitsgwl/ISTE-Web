@@ -31,7 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register API Routers
+# Register API Routers with /api prefix (Primary)
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(auth_google.router, prefix=settings.API_V1_STR)
 app.include_router(admin.router, prefix=settings.API_V1_STR)
@@ -39,6 +39,15 @@ app.include_router(events.router, prefix=settings.API_V1_STR)
 app.include_router(content.router, prefix=settings.API_V1_STR)
 app.include_router(contact.router, prefix=settings.API_V1_STR)
 app.include_router(health.router, prefix=settings.API_V1_STR)
+
+# Register API Routers at root (Fallback for direct non-prefixed paths)
+app.include_router(auth.router)
+app.include_router(auth_google.router)
+app.include_router(admin.router)
+app.include_router(events.router)
+app.include_router(content.router)
+app.include_router(contact.router)
+app.include_router(health.router)
 
 @app.on_event("startup")
 async def startup_db_verification():
