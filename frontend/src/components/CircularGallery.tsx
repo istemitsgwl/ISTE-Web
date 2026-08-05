@@ -527,8 +527,8 @@ class App {
     const touch = e.touches ? e.touches[0] : e;
     const x = touch.clientX;
     const y = touch.clientY;
-    const distanceX = (this.start - x) * (this.scrollSpeed * 0.025);
-    const distanceY = (this.startY - y) * (this.scrollSpeed * 0.015);
+    const distanceX = (this.start - x) * 0.008;
+    const distanceY = (this.startY - y) * 0.005;
     this.scroll.target = this.scroll.position + distanceX + distanceY;
   }
   onTouchUp() {
@@ -537,7 +537,7 @@ class App {
   }
   onWheel(e: any) {
     const delta = e.deltaY || e.wheelDelta || e.detail;
-    this.scroll.target += (delta > 0 ? this.scrollSpeed : -this.scrollSpeed) * 0.2;
+    this.scroll.target += (delta > 0 ? 0.3 : -0.3);
     this.onCheckDebounce();
   }
   onWindowScroll() {
@@ -545,20 +545,20 @@ class App {
     const delta = currentScrollY - (this.lastScrollY || 0);
     this.lastScrollY = currentScrollY;
     if (Math.abs(delta) > 0.2) {
-      this.scroll.target += delta * 0.06;
+      this.scroll.target += delta * 0.015;
     }
   }
   onKeyDown(e: any) {
     switch (e.key) {
       case 'ArrowRight':
         e.preventDefault();
-        this.scroll.target += this.scrollSpeed * 5;
+        this.scroll.target += 0.8;
         this.onCheckDebounce();
         break;
 
       case 'ArrowLeft':
         e.preventDefault();
-        this.scroll.target -= this.scrollSpeed * 5;
+        this.scroll.target -= 0.8;
         this.onCheckDebounce();
         break;
 
@@ -613,9 +613,9 @@ class App {
   update() {
     if (this.isPaused) return;
 
-    // Smooth continuous auto-rotation drift when not actively dragging with touch
+    // Slow, smooth, elegant continuous auto-rotation drift
     if (!this.isDown) {
-      this.scroll.target += 0.15;
+      this.scroll.target += 0.02;
     }
 
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
