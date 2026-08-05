@@ -24,7 +24,8 @@ export default function Mentors() {
     // Dynamic fetch from MongoDB Atlas via FastAPI
     const fetchMentors = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/content/mentors`)
+        const apiBase = import.meta.env.VITE_API_URL || "/api"
+        const res = await fetch(`${apiBase}/content/mentors`)
         if (res.ok) {
           const data = await res.json()
           if (data && data.length > 0) {
