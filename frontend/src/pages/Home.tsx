@@ -11,11 +11,23 @@ import { BlurText } from "@/components/animations/BlurText"
 import { DecryptedText } from "@/components/animations/DecryptedText"
 import { ScrollReveal } from "@/components/animations/ScrollReveal"
 import { sortEventsDescending } from "@/utils/eventSorter"
-import { resolveEventImage } from "@/utils/imageResolver"
+import { resolveEventImage, optimizeCloudinaryUrl } from "@/utils/imageResolver"
+import event1 from "@/assets/Events/e-summit-iste.jpg"
+import event2 from "@/assets/Events/enigma-2025.webp"
+import event3 from "@/assets/Events/xcalibire-23.webp"
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [heroItems, setHeroItems] = useState<Array<{ image: string; text: string }>>([])
+  const [heroItems, setHeroItems] = useState<Array<{ image: string; text: string }>>([
+    { image: event1, text: "E-Summit" },
+    { image: event2, text: "Enigma 2025" },
+    { image: event3, text: "Xcalibur 23" },
+    { image: event1, text: "ISTE Induction" },
+    { image: event2, text: "Innovate MITS" },
+    { image: event3, text: "Chapter Meet" },
+    { image: event1, text: "Code Drive" },
+    { image: event2, text: "Hackathon" }
+  ])
   const [homeEvents, setHomeEvents] = useState<any[]>([])
   const [homeMentors, setHomeMentors] = useState<any[]>([])
   const [loadingEvents, setLoadingEvents] = useState(true)
@@ -67,7 +79,7 @@ export default function Home() {
             const shuffled = [...allItems].sort(() => Math.random() - 0.5)
             
             const mapped = shuffled.map((item: any) => ({
-              image: item.image,
+              image: optimizeCloudinaryUrl(item.image, "c_fill,w_600,h_400,q_auto,f_auto"),
               text: item.title || "ISTE Showcase"
             }))
             
@@ -342,7 +354,7 @@ export default function Home() {
               >
                 <div
                   className="h-44 w-full bg-cover bg-center bg-no-repeat relative"
-                  style={{ backgroundImage: `url(${resolveEventImage(event.bannerImage || event.image)})` }}
+                  style={{ backgroundImage: `url(${optimizeCloudinaryUrl(resolveEventImage(event.bannerImage || event.image), "c_fill,w_400,h_250,q_auto,f_auto")})` }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
                   <span className={`absolute top-4 right-4 text-[9px] uppercase font-extrabold px-2.5 py-1 rounded-full ${

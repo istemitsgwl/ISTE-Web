@@ -16,7 +16,7 @@ const Faqs = lazy(() => import("@/pages/Faqs"))
 const Contact = lazy(() => import("@/pages/Contact"))
 const Login = lazy(() => import("@/pages/Login"))
 const Admin = lazy(() => import("@/pages/Admin"))
-const Developers = lazy(() => import("@/pages/Developers"))
+import Developers from "@/pages/Developers"
 
 import { ThemeProvider, useTheme } from "@/context/ThemeContext"
 import ClickSpark from "@/components/ClickSpark"

@@ -3,6 +3,9 @@
   height: 100%;
   overflow: hidden;
   cursor: grab;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .circular-gallery:active {
@@ -13,3 +16,80 @@
   outline: 2px solid #fff;
   outline-offset: 4px;
 }
+
+.circular-gallery canvas {
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Skeleton Styles */
+.gallery-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  pointer-events: none;
+  z-index: 5;
+  width: 100%;
+  height: 100%;
+  padding: 0 1rem;
+  overflow: hidden;
+}
+
+.skeleton-card {
+  width: 130px;
+  height: 170px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite linear;
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .skeleton-card {
+    width: 200px;
+    height: 260px;
+    border-radius: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .skeleton-card {
+    width: 250px;
+    height: 320px;
+    border-radius: 20px;
+  }
+}
+
+/* Match the exact circular bending curve angles */
+.skeleton-card:nth-child(1) {
+  transform: rotate(-10deg) translateY(25px);
+}
+
+.skeleton-card:nth-child(2) {
+  transform: rotate(-3deg) translateY(5px);
+}
+
+.skeleton-card:nth-child(3) {
+  transform: rotate(3deg) translateY(5px);
+}
+
+.skeleton-card:nth-child(4) {
+  transform: rotate(10deg) translateY(25px);
+}
+
+@keyframes loading-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+

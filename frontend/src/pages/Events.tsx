@@ -12,7 +12,7 @@ import { BlurText } from "@/components/animations/BlurText"
 import { DecryptedText } from "@/components/animations/DecryptedText"
 import { ScrollReveal } from "@/components/animations/ScrollReveal"
 import { sortEventsDescending } from "@/utils/eventSorter"
-import { resolveEventImage } from "@/utils/imageResolver"
+import { resolveEventImage, optimizeCloudinaryUrl } from "@/utils/imageResolver"
 
 declare global {
   interface Window {
@@ -27,6 +27,7 @@ export default function Events() {
   const [eventList, setEventList] = useState<any[]>([])
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null)
   const [registrationOpen, setRegistrationOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
   
   // Registration form responses state
   const [formResponses, setFormResponses] = useState<Record<string, string>>({})
@@ -34,10 +35,11 @@ export default function Events() {
   const [formError, setFormError] = useState("")
 
   useEffect(() => {
+    let active = true
     const fetchEvents = async () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL || "/api"}/events`)
-        if (res.ok) {
+        if (res.ok && active) {
           const data = await res.json()
           if (data && data.length > 0) {
             setEventList(sortEventsDescending(data))
@@ -45,9 +47,14 @@ export default function Events() {
         }
       } catch (err) {
         console.warn("REST events fetch failed. Using fallback backup.", err)
+      } finally {
+        if (active) setLoading(false)
       }
     }
     fetchEvents()
+    return () => {
+      active = false
+    }
   }, [])
 
   const filteredEvents = eventList.filter((event) => {
@@ -179,93 +186,118 @@ export default function Events() {
 
         {/* Events Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <AnimatePresence mode="popLayout">
-            {filteredEvents.map((event) => (
-              <motion.div
-                layout
-                key={event.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.4 }}
-                className="h-full"
+          {loading ? (
+            Array.from({ length: 4 }).map((_, idx) => (
+              <BorderGlowCard
+                key={idx}
+                containerClassName="p-0 overflow-hidden h-[450px]"
+                className="flex flex-col h-full animate-pulse"
+                glowColor="rgba(0, 243, 255, 0.05)"
               >
-                <BorderGlowCard
-                  containerClassName="p-0 overflow-hidden h-full"
-                  className="flex flex-col h-full"
-                  glowColor="rgba(0, 243, 255, 0.12)"
+                <div className="h-56 w-full bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40" />
+                <div className="p-6 sm:p-8 flex flex-col flex-1 gap-4">
+                  <div className="h-3.5 w-24 bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 rounded-md" />
+                  <div className="h-6 w-48 bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 rounded-md" />
+                  <div className="h-3.5 w-full bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 rounded-md" />
+                  <div className="h-3.5 w-5/6 bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 rounded-md" />
+                  <div className="h-10 w-full bg-slate-900/50 dark:bg-slate-900/50 [.light_&]:bg-slate-300/40 rounded-xl mt-auto" />
+                </div>
+              </BorderGlowCard>
+            ))
+          ) : filteredEvents.length === 0 ? (
+            <div className="col-span-1 md:col-span-2 text-center py-12 glass-panel border border-border/85 bg-card/25 rounded-3xl">
+              <p className="text-sm font-extrabold text-foreground mb-1.5">No matching events found</p>
+              <p className="text-xs text-muted-foreground">Adjust your filter category tab selection.</p>
+            </div>
+          ) : (
+            <AnimatePresence mode="popLayout">
+              {filteredEvents.map((event) => (
+                <motion.div
+                  layout
+                  key={event.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.4 }}
+                  className="h-full"
                 >
-                  {/* Event Cover Image */}
-                  <div
-                    className="h-56 w-full bg-cover bg-center bg-no-repeat relative shrink-0"
-                    style={{ backgroundImage: `url(${resolveEventImage(event.bannerImage || event.image)})` }}
+                  <BorderGlowCard
+                    containerClassName="p-0 overflow-hidden h-full"
+                    className="flex flex-col h-full"
+                    glowColor="rgba(0, 243, 255, 0.12)"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
-                    <span className={`absolute top-4 right-4 text-[10px] uppercase font-extrabold px-3 py-1.5 rounded-full ${
-                      event.status === 'upcoming' 
-                        ? 'bg-primary text-slate-950 shadow-[0_0_15px_rgba(0,243,255,0.35)]' 
-                        : 'bg-muted border border-border/50 text-muted-foreground'
-                    }`}>
-                      {event.status}
-                    </span>
-                  </div>
-
-                  {/* Event Contents */}
-                  <div className="p-6 sm:p-8 flex flex-col flex-1">
-                    <div className="flex items-center gap-2 text-xs font-bold text-primary/80 mb-3 uppercase tracking-wider">
-                      <Tag className="w-3.5 h-3.5" />
-                      <span>{event.category}</span>
+                    {/* Event Cover Image */}
+                     <div
+                      className="h-56 w-full bg-cover bg-center bg-no-repeat relative shrink-0"
+                      style={{ backgroundImage: `url(${optimizeCloudinaryUrl(resolveEventImage(event.bannerImage || event.image), "c_fill,w_800,h_450,q_auto,f_auto")})` }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent" />
+                      <span className={`absolute top-4 right-4 text-[10px] uppercase font-extrabold px-3 py-1.5 rounded-full ${
+                        event.status === 'upcoming' 
+                          ? 'bg-primary text-slate-950 shadow-[0_0_15px_rgba(0,243,255,0.35)]' 
+                          : 'bg-muted border border-border/50 text-muted-foreground'
+                      }`}>
+                        {event.status}
+                      </span>
                     </div>
 
-                    <h3 className="text-xl sm:text-2xl font-black mb-4 text-foreground group-hover:text-primary transition-colors">
-                      {event.title}
-                    </h3>
-
-                    <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mb-6 flex-1 font-medium">
-                      {event.desc}
-                    </p>
-
-                    <div className="flex flex-col gap-3 text-xs text-muted-foreground mb-8 border-t border-border/40 pt-4 font-medium">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-primary/70 shrink-0" />
-                        <span>{event.date}</span>
+                    {/* Event Contents */}
+                    <div className="p-6 sm:p-8 flex flex-col flex-1">
+                      <div className="flex items-center gap-2 text-xs font-bold text-primary/80 mb-3 uppercase tracking-wider">
+                        <Tag className="w-3.5 h-3.5" />
+                        <span>{event.category}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-secondary/70 shrink-0" />
-                        <span>{event.venue}</span>
+
+                      <h3 className="text-xl sm:text-2xl font-black mb-4 text-foreground group-hover:text-primary transition-colors">
+                        {event.title}
+                      </h3>
+
+                      <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mb-6 flex-1 font-medium">
+                        {event.desc}
+                      </p>
+
+                      <div className="flex flex-col gap-3 text-xs text-muted-foreground mb-8 border-t border-border/40 pt-4 font-medium">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-primary/70 shrink-0" />
+                          <span>{event.date}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-secondary/70 shrink-0" />
+                          <span>{event.venue}</span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-3">
+                        {event.status === "upcoming" ? (
+                          <Button
+                            onClick={() => handleRegisterClick(event)}
+                            className="w-full justify-center gap-2 py-5 font-bold rounded-xl text-sm"
+                            variant="glow"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                            Register Now
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedEvent(event);
+                              setRegistrationOpen(true);
+                            }}
+                            className="w-full justify-center gap-2 py-5 font-bold rounded-xl border-border text-sm hover:bg-muted"
+                          >
+                            <Info className="w-4 h-4 text-primary" />
+                            View Summary
+                          </Button>
+                        )}
                       </div>
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-3">
-                      {event.status === "upcoming" ? (
-                        <Button
-                          onClick={() => handleRegisterClick(event)}
-                          className="w-full justify-center gap-2 py-5 font-bold rounded-xl text-sm"
-                          variant="glow"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                          Register Now
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedEvent(event);
-                            setRegistrationOpen(true);
-                          }}
-                          className="w-full justify-center gap-2 py-5 font-bold rounded-xl border-border text-sm hover:bg-muted"
-                        >
-                          <Info className="w-4 h-4 text-primary" />
-                          View Summary
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </BorderGlowCard>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+                  </BorderGlowCard>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          )}
         </div>
       </div>
 

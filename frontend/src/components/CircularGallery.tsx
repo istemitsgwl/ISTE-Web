@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Camera, Mesh, Plane, Program, Renderer, Texture, Transform } from 'ogl';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import './CircularGallery.css';
 
@@ -256,6 +256,7 @@ class Media {
     this.createMesh();
     // Title text removed below photos as requested
     this.onResize();
+    this.update({ current: 0, last: 0 }, 'right');
   }
   createShader() {
     const texture = new Texture(this.gl, {
@@ -406,7 +407,7 @@ class Media {
     this.padding = 2;
     this.width = this.plane.scale.x + this.padding;
     this.widthTotal = this.width * this.length;
-    this.x = this.width * this.index;
+    this.x = this.width * this.index - this.widthTotal / 2;
   }
 }
 
@@ -613,9 +614,9 @@ class App {
   update() {
     if (this.isPaused) return;
 
-    // Slow, smooth, elegant continuous auto-rotation drift
+    // Fast, smooth, premium continuous auto-rotation drift
     if (!this.isDown) {
-      this.scroll.target += 0.02;
+      this.scroll.target += 0.05;
     }
 
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
@@ -694,9 +695,36 @@ export default function CircularGallery({
 }: CircularGalleryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<App | null>(null);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current || !items || items.length === 0) return;
+    if (!items || items.length === 0) return;
+    let active = true;
+
+    const preloadImage = (url: string) => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.src = url;
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(img);
+      });
+    };
+
+    // Preload all unique images to ensure zero pop-in effects
+    const targetImages = items.map(item => item.image);
+    Promise.all(targetImages.map(preloadImage)).then(() => {
+      if (active) {
+        setImagesLoaded(true);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [items]);
+
+  useEffect(() => {
+    if (!containerRef.current || !items || items.length === 0 || !imagesLoaded) return;
     let app: App;
     let isMounted = true;
 
@@ -739,15 +767,26 @@ export default function CircularGallery({
       if (app) app.destroy();
       appRef.current = null;
     };
-  }, [items, bend, textColor, borderRadius, font, fontUrl, scrollSpeed, scrollEase]);
+  }, [items, bend, textColor, borderRadius, font, fontUrl, scrollSpeed, scrollEase, imagesLoaded]);
 
   return (
-    <div
-      className="circular-gallery"
-      ref={containerRef}
-      tabIndex={0}
-      role="region"
-      aria-label="Circular image gallery. Use left and right arrow keys to navigate."
-    />
+    <div className="relative w-full h-full overflow-hidden">
+      {!imagesLoaded && (
+        <div className="gallery-skeleton">
+          <div className="skeleton-card" />
+          <div className="skeleton-card" />
+          <div className="skeleton-card" />
+          <div className="skeleton-card" />
+        </div>
+      )}
+      <div
+        className="circular-gallery w-full h-full"
+        ref={containerRef}
+        tabIndex={0}
+        role="region"
+        aria-label="Circular image gallery. Use left and right arrow keys to navigate."
+        style={{ opacity: imagesLoaded ? 1 : 0, transition: 'opacity 0.4s ease-in-out' }}
+      />
+    </div>
   );
 }
