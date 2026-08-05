@@ -111,3 +111,67 @@ async def google_login(payload: GoogleLoginRequest, db: AsyncIOMotorDatabase = D
             "picture": admin_record.get("picture", picture)
         }
     }
+
+class AdminDirectLoginRequest(BaseModel):
+    email: str
+    passcode: str = ""
+
+@router.post("/admin-login")
+async def admin_direct_login(payload: AdminDirectLoginRequest, db: AsyncIOMotorDatabase = Depends(get_mongo_db)):
+    """
+    Direct Administrative Login Endpoint for authorized Super Admin accounts.
+    """
+    email = payload.email.lower().strip()
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email address is required."
+        )
+
+    admin_record = await db.admins.find_one({"email": email})
+
+    # Auto-seed initial Super Admin for Shivam Patidar if missing
+    if not admin_record and (email == "shivampatidar780@gmail.com" or email == "admin@iste-mits.edu.in"):
+        super_admin_doc = {
+            "email": email,
+            "name": "Shivam Patidar",
+            "role": "super_admin",
+            "status": "active",
+            "provider": "direct",
+            "picture": "",
+            "createdAt": datetime.utcnow(),
+            "updatedAt": datetime.utcnow()
+        }
+        res = await db.admins.insert_one(super_admin_doc)
+        admin_record = await db.admins.find_one({"_id": res.inserted_id})
+
+    if not admin_record or admin_record.get("status") != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Unauthorized admin email account. Contact Super Admin to grant access."
+        )
+
+    admin_id = str(admin_record.get("_id"))
+    role = admin_record.get("role", "super_admin")
+    name = admin_record.get("name", "Shivam Patidar")
+
+    token_payload = {
+        "sub": admin_id,
+        "email": email,
+        "name": name,
+        "role": role
+    }
+    jwt_access_token = create_jwt_token(token_payload)
+
+    return {
+        "access_token": jwt_access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": admin_id,
+            "email": email,
+            "name": name,
+            "role": role,
+            "picture": admin_record.get("picture", "")
+        }
+    }
+
