@@ -11,6 +11,7 @@ import {
 import shivamPortrait from "@/assets/shivam-patidar.jpg"
 import shivamSharmaPortrait from "@/assets/shivam-sharma.jpg"
 import amitVishwakarmaPortrait from "@/assets/amit-vishwakarma.jpg"
+import ayanAhmedKhanPortrait from "@/assets/ayan-ahmed-khan.jpg"
 import manjreePanditImg from "@/assets/mentors/manjree-pandit.jpg"
 import vishalChaudharyImg from "@/assets/mentors/vishal-chaudhary.jpg"
 import { Button } from "@/components/ui/Button"
@@ -108,6 +109,16 @@ const SUPPORTING_DEVS: SupportingDevData[] = [
     shortAbout: "Hi, I'm a 3rd-year ECE student at MITS Gwalior, currently learning Data Analytics and building my skills in Excel, SQL, Power BI, and Python. I'm also interested in Graphic Designing and want to grow my career in the Data Analytics field.",
     linkedin: "https://www.linkedin.com/in/shivam-sharma-ab22532a7",
     email: "hshivamsharma1122@gmail.com"
+  },
+  {
+    id: "ayan-ahmed-khan",
+    photo: ayanAhmedKhanPortrait,
+    name: "Ayan Ahmed Khan",
+    branchCollege: "Information Technology (IoT) • MITS Gwalior",
+    roleTag: "Deployment & Security Engineer",
+    shortAbout: "Final-year Information Technology (IoT) undergraduate at MITS Gwalior working on trustworthy machine learning, RAG and agentic AI systems, and backend engineering. I handled the production deployment of the ISTE MITS website — Vercel multi-service architecture, API security hardening, and rate limiting.",
+    linkedin: "https://www.linkedin.com/in/ayan-ahmed-khan-95978620a",
+    email: "ayan.ahmedkhan591@gmail.com"
   }
 ]
 
