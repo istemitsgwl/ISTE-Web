@@ -21,7 +21,9 @@ def send_contact_notification_email(
     Tries Resend API first, then fallback to SMTP/Gmail. Returns True if sent, False if delivery failed.
     """
     recipient = settings.NOTIFICATION_EMAIL or "shivampatidar780@gmail.com"
-    email_subject = f"New Contact Form Submission: {subject}"
+    # Strip CR/LF to prevent email header injection via the user-supplied subject
+    safe_subject = subject.replace("\r", " ").replace("\n", " ").strip()[:150]
+    email_subject = f"New Contact Form Submission: {safe_subject}"
 
     body_text = f"""New Contact Form Submission
 

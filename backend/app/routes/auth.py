@@ -32,8 +32,9 @@ async def update_profile(
             updated.pop("_id", None)
             return updated
         return current_user
-    except Exception as e:
+    except Exception:
+        logger.exception("Profile update failed:")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database update failed: {e}"
+            detail="Profile update failed."
         )

@@ -20,11 +20,11 @@ async def get_health_status(db: AsyncIOMotorDatabase = Depends(get_mongo_db)):
             "mongodb_connected": True,
             "latency_ms": latency_ms
         }
-    except Exception as e:
+    except Exception:
+        logger.exception("Health check database ping failed:")
         return {
             "status": "degraded",
-            "mongodb_connected": False,
-            "error": str(e)
+            "mongodb_connected": False
         }
 
 @router.get("/mongodb")
@@ -43,11 +43,11 @@ async def get_mongodb_health(db: AsyncIOMotorDatabase = Depends(get_mongo_db)):
             "connection_latency_ms": latency_ms,
             "error_details": None
         }
-    except Exception as e:
+    except Exception:
         latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
         logger.exception("MongoDB Atlas health check failed:")
         return {
             "mongodb_connected": False,
             "connection_latency_ms": latency_ms,
-            "error_details": str(e)
+            "error_details": "Database connection failed. See server logs."
         }

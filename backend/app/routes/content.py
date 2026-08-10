@@ -143,7 +143,7 @@ async def save_team_member(
             logger.error(f"Unified upload failed for team member: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to upload profile image to Cloudinary: {e}"
+                detail="Failed to upload profile image."
             )
 
     member_doc = {
@@ -286,7 +286,7 @@ async def upload_gallery_image(
         logger.error(f"Unified upload failed for gallery: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to upload gallery image to Cloudinary: {e}"
+            detail="Failed to upload gallery image."
         )
 
     if not image_url:
@@ -355,7 +355,7 @@ async def update_gallery_image(
             logger.error(f"Unified upload failed for gallery update: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to upload updated gallery image to Cloudinary: {e}"
+                detail="Failed to upload updated gallery image."
             )
 
     await db.gallery.update_one(query_filter, {"$set": update_fields})

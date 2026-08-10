@@ -20,20 +20,21 @@ EVENT_UPDATABLE_FIELDS = {
     "maxParticipants", "registrationOpen", "updatedAt", "createdAt",
 }
 
-def sanitize_mongo_document(value, depth: int = 0):
-    """Recursively strips MongoDB operator keys ($...) and dotted keys from user JSON."""
+def sanitize_mongo_document(value, depth: int = 0, max_str: int = None):
+    """Recursively strips MongoDB operator keys ($...) and dotted keys from user JSON.
+    Optionally truncates string values to max_str characters."""
     if depth > 8:
         return None
     if isinstance(value, dict):
         return {
-            k: sanitize_mongo_document(v, depth + 1)
+            k: sanitize_mongo_document(v, depth + 1, max_str)
             for k, v in value.items()
             if isinstance(k, str) and not k.startswith("$") and "." not in k
         }
     if isinstance(value, list):
-        return [sanitize_mongo_document(v, depth + 1) for v in value[:100]]
-    if isinstance(value, str):
-        return value[:5000]
+        return [sanitize_mongo_document(v, depth + 1, max_str) for v in value[:100]]
+    if isinstance(value, str) and max_str is not None:
+        return value[:max_str]
     return value
 
 def parse_event_date(ev: dict) -> float:
@@ -92,7 +93,7 @@ async def get_event(eventId: str, db: AsyncIOMotorDatabase = Depends(get_mongo_d
         logger.exception(f"Failed to fetch event '{eventId}':")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch event: {e}"
+            detail="Failed to fetch event."
         )
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -124,7 +125,7 @@ async def create_event(
             logger.error(f"Failed to upload event banner to Cloudinary: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to upload event banner to Cloudinary: {e}"
+                detail="Failed to upload event banner."
             )
             
     try:
@@ -135,7 +136,7 @@ async def create_event(
         logger.exception("Database event creation failed:")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database transaction failed: {e}"
+            detail="Failed to create event."
         )
 
 @router.put("/{eventId}")
@@ -170,7 +171,7 @@ async def update_event(
             logger.error(f"Failed to upload event banner to Cloudinary during update: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to upload event banner to Cloudinary during update: {e}"
+                detail="Failed to upload event banner."
             )
             
     await db.events.update_one(query_filter, {"$set": payload})
@@ -197,7 +198,10 @@ async def delete_event(
     await db.events.delete_one(query_filter)
     return {"message": "Event deleted successfully", "id": eventId}
 
-@router.post("/{eventId}/register")
+@router.post(
+    "/{eventId}/register",
+    dependencies=[Depends(RateLimiter(times=10, seconds=60, scope="event_register"))],
+)
 async def register_for_event(
     eventId: str,
     responseData: dict,
@@ -206,7 +210,15 @@ async def register_for_event(
 ):
     """Registers authenticated user for an event (100% Free registration)."""
     uid = current_user.get("id") or current_user.get("uid") or current_user.get("email")
-    
+
+    # Sanitize free-form registration answers (strip Mongo operators, cap sizes)
+    responseData = sanitize_mongo_document(responseData, max_str=2000) or {}
+    if len(responseData) > 50:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Registration form contains too many fields."
+        )
+
     try:
         # 1. Fetch Event
         query_filter = {"$or": [{"id": eventId}, {"_id": ObjectId(eventId) if ObjectId.is_valid(eventId) else None}]}
@@ -217,14 +229,7 @@ async def register_for_event(
                 detail="Target event does not exist"
             )
 
-        # 2. Check Capacity
-        if event_doc.get("currentParticipants", 0) >= event_doc.get("maxParticipants", 9999):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Registration capacity reached for this event"
-            )
-            
-        # 3. Check for existing registration
+        # 2. Check for existing registration
         existing_reg = await db.event_registrations.find_one({"eventId": eventId, "userId": uid})
         if existing_reg:
             return {
@@ -232,9 +237,26 @@ async def register_for_event(
                 "registrationId": existing_reg.get("registrationId", str(existing_reg.get("_id"))),
                 "status": "confirmed"
             }
-            
+
+        # 3. Atomically claim a capacity slot (prevents overbooking under concurrency)
+        capacity_filter = {
+            **query_filter,
+            "$expr": {
+                "$lt": [
+                    {"$ifNull": ["$currentParticipants", 0]},
+                    {"$ifNull": ["$maxParticipants", 999999]},
+                ]
+            },
+        }
+        claim = await db.events.update_one(capacity_filter, {"$inc": {"currentParticipants": 1}})
+        if claim.modified_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Registration capacity reached for this event"
+            )
+
         registration_id = f"ISTE-REG-{uuid.uuid4().hex[:8].upper()}"
-        
+
         reg_data = {
             "registrationId": registration_id,
             "eventId": eventId,
@@ -247,12 +269,14 @@ async def register_for_event(
             "registeredAt": datetime.utcnow(),
             "updatedAt": datetime.utcnow()
         }
-        
-        await db.event_registrations.insert_one(reg_data)
-        
-        # Increment current participants count
-        await db.events.update_one(query_filter, {"$inc": {"currentParticipants": 1}})
-        
+
+        try:
+            await db.event_registrations.insert_one(reg_data)
+        except Exception:
+            # Release the claimed slot if the registration document could not be saved
+            await db.events.update_one(query_filter, {"$inc": {"currentParticipants": -1}})
+            raise
+
         return {
             "registrationId": registration_id,
             "status": "confirmed",
@@ -261,9 +285,9 @@ async def register_for_event(
         }
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         logger.exception("Event registration transaction failed:")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Registration transaction failed: {e}"
+            detail="Registration failed due to a server error. Please try again."
         )

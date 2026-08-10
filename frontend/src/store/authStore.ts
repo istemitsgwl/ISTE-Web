@@ -20,7 +20,6 @@ interface AuthState {
   loading: boolean
   isAuthenticated: boolean
   googleLogin: (idToken: string) => Promise<void>
-  adminDirectLogin: (email: string) => Promise<void>
   logout: () => void
   setAuth: (user: UserProfile | null) => void
   setLoading: (loading: boolean) => void
@@ -64,42 +63,6 @@ export const useAuthStore = create<AuthState>((set) => {
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}))
           throw new Error(errData.detail || 'Authorization failed. Unregistered Google account.')
-        }
-
-        const data = await res.json()
-        const userProfile: UserProfile = {
-          ...data.user,
-          token: data.access_token
-        }
-
-        localStorage.setItem(LOCAL_STORAGE_KEY, data.access_token)
-        localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(userProfile))
-
-        set({
-          user: userProfile,
-          isAuthenticated: true,
-          loading: false
-        })
-      } catch (error) {
-        set({ loading: false })
-        throw error
-      }
-    },
-
-    adminDirectLogin: async (email: string) => {
-      set({ loading: true })
-      try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/auth/admin-login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ email })
-        })
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}))
-          throw new Error(errData.detail || 'Authorization failed. Account not listed as an active admin.')
         }
 
         const data = await res.json()

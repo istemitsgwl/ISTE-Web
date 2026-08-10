@@ -65,28 +65,31 @@ async def init_db_indexes():
         await db.contact_messages.create_index([("status", 1)])
         await db.contact_messages.create_index([("email", 1)])
 
-        # 6. Seed the first Super Admin automatically if it doesn't already exist
-        super_admin_email = "shivampatidar780@gmail.com"
-        exists = await db.admins.find_one({"email": super_admin_email})
-        if not exists:
-            from datetime import datetime
-            await db.admins.insert_one({
-                "name": "Shivam Patidar",
-                "email": super_admin_email,
-                "role": "super_admin",
-                "status": "active",
-                "provider": "google",
-                "picture": "",
-                "createdAt": datetime.utcnow(),
-                "updatedAt": datetime.utcnow()
-            })
-            logger.info("✓ Permanent first Super Admin (shivampatidar780@gmail.com) successfully seeded into 'admins' collection.")
+        # 7. Seed the first Super Admin automatically if it doesn't already exist
+        super_admin_email = (settings.SUPER_ADMIN_EMAIL or "").lower().strip()
+        if not super_admin_email:
+            logger.info("SUPER_ADMIN_EMAIL not configured — skipping Super Admin seeding.")
         else:
-            await db.admins.update_one(
-                {"email": super_admin_email},
-                {"$set": {"status": "active", "provider": "google"}}
-            )
-            logger.info("✓ Legacy Super Admin record updated with 'status': 'active' and 'provider': 'google'.")
+            exists = await db.admins.find_one({"email": super_admin_email})
+            if not exists:
+                from datetime import datetime
+                await db.admins.insert_one({
+                    "name": "Super Admin",
+                    "email": super_admin_email,
+                    "role": "super_admin",
+                    "status": "active",
+                    "provider": "google",
+                    "picture": "",
+                    "createdAt": datetime.utcnow(),
+                    "updatedAt": datetime.utcnow()
+                })
+                logger.info(f"✓ First Super Admin ('{super_admin_email}') successfully seeded into 'admins' collection.")
+            else:
+                await db.admins.update_one(
+                    {"email": super_admin_email},
+                    {"$set": {"status": "active"}}
+                )
+                logger.info("✓ Existing Super Admin record verified as 'active'.")
 
         # Update any other admin records that are missing status property
         await db.admins.update_many(
