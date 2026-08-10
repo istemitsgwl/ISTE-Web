@@ -1,7 +1,6 @@
 import logging
 import html
-import time
-from collections import defaultdict
+import re
 from datetime import datetime
 from typing import Optional
 
@@ -10,6 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 
 from app.dependencies import require_admin, get_mongo_db
+from app.rate_limit import RateLimiter, get_client_ip
 from app.schemas.contact import ContactCreate
 from app.email_service import send_contact_notification_email
 
@@ -17,23 +17,18 @@ logger = logging.getLogger("uvicorn")
 
 router = APIRouter(prefix="", tags=["Contact & Messages Engine"])
 
-# Rate limiter storage (IP -> list of timestamps)
-_ip_rate_limit_map = defaultdict(list)
-
-def is_rate_limited(ip_address: str, limit: int = 5, window: int = 60) -> bool:
-    now = time.time()
-    valid_timestamps = [ts for ts in _ip_rate_limit_map[ip_address] if now - ts < window]
-    _ip_rate_limit_map[ip_address] = valid_timestamps
-    if len(valid_timestamps) >= limit:
-        return True
-    _ip_rate_limit_map[ip_address].append(now)
-    return False
-
 # ==========================================
 # PUBLIC CONTACT API
 # ==========================================
 
-@router.post("/contact", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/contact",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(RateLimiter(
+        times=5, seconds=60, scope="contact_submit",
+        detail="Too many message submissions. Please wait 1 minute before trying again."
+    ))],
+)
 async def submit_contact_form(
     payload: ContactCreate,
     request: Request,
@@ -44,23 +39,10 @@ async def submit_contact_form(
     Validates input, enforces rate limits, stores message in MongoDB, and triggers email alerts.
     """
     # 1. Client IP & User Agent Extraction
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        client_ip = forwarded.split(",")[0].strip()
-    else:
-        client_ip = request.client.host if request.client else "127.0.0.1"
+    client_ip = get_client_ip(request)
+    user_agent = (request.headers.get("User-Agent") or "Unknown")[:512]
 
-    user_agent = request.headers.get("User-Agent") or "Unknown"
-
-    # 2. Rate Limiting Check (5 submissions per minute)
-    if is_rate_limited(client_ip, limit=5, window=60):
-        logger.warning(f"⚠️ Rate limit exceeded for IP: {client_ip}")
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many message submissions. Please wait 1 minute before trying again."
-        )
-
-    # 3. Input Sanitization & XSS Protection
+    # 2. Input Sanitization & XSS Protection
     clean_name = html.escape(payload.name.strip())
     clean_email = html.escape(payload.email.strip())
     clean_subject = html.escape(payload.subject.strip())
@@ -80,13 +62,13 @@ async def submit_contact_form(
     }
 
     try:
-        # 4. Save into MongoDB contact_messages collection
+        # 3. Save into MongoDB contact_messages collection
         res = await db.contact_messages.insert_one(message_doc)
         doc_id = str(res.inserted_id)
         message_doc["id"] = doc_id
         message_doc.pop("_id", None)
 
-        # 5. Trigger Email Notification (Resend API / SMTP)
+        # 4. Trigger Email Notification (Resend API / SMTP)
         submitted_str = now.strftime("%Y-%m-%d %H:%M:%S UTC")
         send_contact_notification_email(
             name=clean_name,
@@ -135,9 +117,10 @@ async def get_admin_contact_messages(
     if status_filter and status_filter.lower() != "all":
         query_filter["status"] = "Read" if status_filter.lower() == "read" else "Unread"
 
-    # Search filtering across name, email, and subject
+    # Search filtering across name, email, and subject.
+    # re.escape prevents user-controlled regex (NoSQL regex injection / ReDoS).
     if search and search.strip():
-        regex_pattern = {"$regex": search.strip(), "$options": "i"}
+        regex_pattern = {"$regex": re.escape(search.strip()[:100]), "$options": "i"}
         query_filter["$or"] = [
             {"name": regex_pattern},
             {"email": regex_pattern},
@@ -173,7 +156,7 @@ async def get_admin_contact_messages(
         }
     except Exception as e:
         logger.exception("Failed to fetch admin contact messages:")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database fetch failed: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch contact messages.")
 
 
 @router.get("/admin/contact/{id}")
@@ -194,8 +177,9 @@ async def get_single_contact_message(
         return doc
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except Exception:
+        logger.exception("Contact message operation failed:")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
 
 
 @router.patch("/admin/contact/{id}/read")
@@ -231,8 +215,9 @@ async def toggle_message_read_status(
         return updated
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except Exception:
+        logger.exception("Contact message operation failed:")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
 
 
 @router.delete("/admin/contact/{id}")
@@ -252,5 +237,6 @@ async def delete_contact_message(
         return {"success": True, "message": "Contact message deleted successfully", "id": id}
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    except Exception:
+        logger.exception("Contact message operation failed:")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")

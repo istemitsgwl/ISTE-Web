@@ -5,11 +5,36 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from app.dependencies import get_current_user, require_admin, get_mongo_db
+from app.rate_limit import RateLimiter
 from app.schemas.event import EventCreate, EventResponse
 from app.cloudinary_service import upload_image_to_cloudinary, delete_image_from_cloudinary, upload_base64_to_cloudinary
 
 logger = logging.getLogger("uvicorn")
 router = APIRouter(prefix="/events", tags=["Events & Free Registrations"])
+
+# Fields an administrator is allowed to modify through PUT /events/{eventId}.
+# Prevents mass assignment of internal fields (currentParticipants, cloudinaryPublicId, ...).
+EVENT_UPDATABLE_FIELDS = {
+    "title", "desc", "description", "category", "date", "eventDate", "venue",
+    "bannerImage", "image", "speakers", "customFieldsSchema", "status",
+    "maxParticipants", "registrationOpen", "updatedAt", "createdAt",
+}
+
+def sanitize_mongo_document(value, depth: int = 0):
+    """Recursively strips MongoDB operator keys ($...) and dotted keys from user JSON."""
+    if depth > 8:
+        return None
+    if isinstance(value, dict):
+        return {
+            k: sanitize_mongo_document(v, depth + 1)
+            for k, v in value.items()
+            if isinstance(k, str) and not k.startswith("$") and "." not in k
+        }
+    if isinstance(value, list):
+        return [sanitize_mongo_document(v, depth + 1) for v in value[:100]]
+    if isinstance(value, str):
+        return value[:5000]
+    return value
 
 def parse_event_date(ev: dict) -> float:
     raw = ev.get("eventDate") or ev.get("date") or ""
@@ -126,10 +151,11 @@ async def update_event(
     if not existing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
         
+    # Whitelist updatable fields and strip Mongo operators (mass-assignment protection)
+    payload = {k: v for k, v in payload.items() if k in EVENT_UPDATABLE_FIELDS}
+    payload = sanitize_mongo_document(payload)
     payload["updatedAt"] = datetime.utcnow()
-    payload.pop("_id", None)
-    payload.pop("id", None)
-    
+
     # Intercept Base64 banner image and upload to Cloudinary
     banner_url = payload.get("bannerImage") or ""
     if banner_url.startswith("data:image/"):
