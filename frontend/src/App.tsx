@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
 import ScrollToTop from "@/components/ScrollToTop"
 import Preloader from "@/components/Preloader"
+import Seo from "@/components/Seo"
 
 // Lazy load pages for code splitting
 const Home = lazy(() => import("@/pages/Home"))
@@ -46,20 +47,20 @@ function AppContent() {
         <main className="flex-1">
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/mentors" element={<Mentors />} />
-              <Route path="/team" element={<Team />} />
-              <Route path="/developers" element={<Developers />} />
-              <Route path="/events" element={<Events />} />
-              <Route path="/gallery" element={<Gallery />} />
-              <Route path="/faqs" element={<Faqs />} />
-              <Route path="/contact" element={<Contact />} />
+              <Route path="/" element={<><Seo path="/" description="Official website of the ISTE Student's Chapter at Madhav Institute of Technology & Science (MITS DU), Gwalior. Explore technical workshops, hackathons, events, student initiatives, and innovation." /><Home /></>} />
+              <Route path="/about" element={<><Seo title="About Us" path="/about" description="Learn about the ISTE Student's Chapter at MITS DU Gwalior — our mission, vision, flagship fests like ENIGMA and X-Calibre, and how we foster technical excellence." /><About /></>} />
+              <Route path="/mentors" element={<><Seo title="Faculty Mentors" path="/mentors" description="Meet the faculty mentors guiding the ISTE Student's Chapter at MITS DU Gwalior towards innovation and professional excellence." /><Mentors /></>} />
+              <Route path="/team" element={<><Seo title="Our Team" path="/team" description="Meet the steering committees and student team powering ISTE MITS Gwalior — executive, technical, management, marketing and more." /><Team /></>} />
+              <Route path="/developers" element={<><Seo title="Web Team" path="/developers" description="The student developers who designed and built the official ISTE MITS Gwalior website." /><Developers /></>} />
+              <Route path="/events" element={<><Seo title="Events & Workshops" path="/events" description="Explore upcoming and past events by ISTE MITS Gwalior — workshops, hackathons, ENIGMA, X-Calibre and more. Register for free." /><Events /></>} />
+              <Route path="/gallery" element={<><Seo title="Gallery" path="/gallery" description="Photo gallery of ISTE MITS Gwalior — moments from our fests, workshops, seminars and student activities." /><Gallery /></>} />
+              <Route path="/faqs" element={<><Seo title="FAQs" path="/faqs" description="Frequently asked questions about ISTE MITS Gwalior — membership, event registration, certificates and more." /><Faqs /></>} />
+              <Route path="/contact" element={<><Seo title="Contact Us" path="/contact" description="Get in touch with the ISTE Student's Chapter at MITS DU Gwalior — send us a message, find our email, phone and campus address." /><Contact /></>} />
               <Route path="/login" element={<Navigate to="/patidar/admin" replace />} />
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="/patidar/admin" element={<Login />} />
-              <Route path="/admin/dashboard" element={<Admin />} />
-              <Route path="*" element={<div className="flex items-center justify-center min-h-[60vh] text-muted-foreground text-sm font-semibold">Page Not Found</div>} />
+              <Route path="/patidar/admin" element={<><Seo title="Admin Login" path="/patidar/admin" noIndex /><Login /></>} />
+              <Route path="/admin/dashboard" element={<><Seo title="Admin Dashboard" path="/admin/dashboard" noIndex /><Admin /></>} />
+              <Route path="*" element={<><Seo title="Page Not Found" noIndex /><div className="flex items-center justify-center min-h-[60vh] text-muted-foreground text-sm font-semibold">Page Not Found</div></>} />
             </Routes>
           </Suspense>
         </main>

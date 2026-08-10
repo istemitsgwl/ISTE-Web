@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /patidar/
+Disallow: /login
+Disallow: /dashboard
 
-Sitemap: https://iste-mits.edu.in/sitemap.xml
+Sitemap: https://iste.mitsgwalior.in/sitemap.xml
