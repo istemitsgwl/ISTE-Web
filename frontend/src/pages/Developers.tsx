@@ -45,6 +45,7 @@ interface SupportingDevData {
   shortAbout: string
   linkedin: string
   email: string
+  portfolio?: string
 }
 
 interface FacultyMentorData {
@@ -114,11 +115,12 @@ const SUPPORTING_DEVS: SupportingDevData[] = [
     id: "ayan-ahmed-khan",
     photo: ayanAhmedKhanPortrait,
     name: "Ayan Ahmed Khan",
-    branchCollege: "Information Technology (IoT) • MITS Gwalior",
-    roleTag: "Deployment & Security Engineer",
-    shortAbout: "Final-year Information Technology (IoT) undergraduate at MITS Gwalior working on trustworthy machine learning, RAG and agentic AI systems, and backend engineering. I handled the production deployment of the ISTE MITS website — Vercel multi-service architecture, API security hardening, and rate limiting.",
+    branchCollege: "Information Technology (IoT) • MITS Gwalior • Batch 2023–27",
+    roleTag: "Deployment & Security Engineer • Applied AI Intern @ Dexter Capital",
+    shortAbout: "Information Technology (IoT) undergraduate at MITS Gwalior and Applied AI Intern at Dexter Capital, working on trustworthy machine learning, RAG and agentic AI systems, and backend engineering. I handled the production deployment of the ISTE MITS website — Vercel multi-service architecture, API security hardening, and rate limiting.",
     linkedin: "https://www.linkedin.com/in/ayan-ahmed-khan-95978620a",
-    email: "ayan.ahmedkhan591@gmail.com"
+    email: "ayan.ahmedkhan591@gmail.com",
+    portfolio: "https://ayanahmedkhan.vercel.app"
   }
 ]
 
@@ -586,6 +588,17 @@ export default function Developers() {
                       <Mail className="w-4 h-4 text-primary" />
                       <span>Email</span>
                     </a>
+                    {dev.portfolio && (
+                      <a
+                        href={dev.portfolio}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card border border-border text-xs font-extrabold text-foreground hover:text-primary hover:border-primary/50 transition-all shadow-sm"
+                      >
+                        <ExternalLink className="w-4 h-4 text-primary" />
+                        <span>Portfolio</span>
+                      </a>
+                    )}
                   </div>
                 </div>
               </motion.div>
