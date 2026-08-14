@@ -181,9 +181,9 @@ export default function Developers() {
   return (
     <div className="min-h-screen bg-background text-foreground relative pt-28 sm:pt-32 pb-24 px-4 sm:px-8 md:px-12 overflow-x-hidden selection:bg-primary selection:text-primary-foreground">
       
-      {/* Ambient Background Gradient Aura */}
-      <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[160px] pointer-events-none z-0 hidden dark:block" />
-      <div className="fixed bottom-0 right-1/4 w-[700px] h-[700px] bg-secondary/10 rounded-full blur-[180px] pointer-events-none z-0 hidden dark:block" />
+      {/* Ambient Background Gradient Aura (Desktop Only for fast mobile GPU rendering) */}
+      <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[160px] pointer-events-none z-0 hidden lg:dark:block" />
+      <div className="fixed bottom-0 right-1/4 w-[700px] h-[700px] bg-secondary/10 rounded-full blur-[180px] pointer-events-none z-0 hidden lg:dark:block" />
       <div className="fixed inset-0 bg-[linear-gradient(to_right,#8080800c_1px,transparent_1px),linear-gradient(to_bottom,#8080800c_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none opacity-50 z-0" />
 
       <div className="w-full max-w-[1400px] mx-auto relative z-10 space-y-24 sm:space-y-32">
@@ -196,11 +196,11 @@ export default function Developers() {
           {/* LEFT 40%: CINEMATIC PORTRAIT */}
           <div className="w-full lg:w-[40%] flex justify-center order-first lg:order-none relative">
             {/* Ambient glows behind the portrait */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] sm:w-[450px] sm:h-[450px] bg-primary/10 rounded-full blur-[100px] pointer-events-none -z-10 animate-pulse hidden dark:block" />
-            <div className="absolute top-1/3 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] bg-secondary/15 rounded-full blur-[120px] pointer-events-none -z-10 hidden dark:block" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] sm:w-[450px] sm:h-[450px] bg-primary/10 rounded-full blur-[100px] pointer-events-none -z-10 animate-pulse hidden lg:dark:block" />
+            <div className="absolute top-1/3 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] bg-secondary/15 rounded-full blur-[120px] pointer-events-none -z-10 hidden lg:dark:block" />
             
             {/* Mesh gradient effect behind the picture */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/5 via-purple-500/5 to-transparent blur-3xl pointer-events-none -z-10" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/5 via-purple-500/5 to-transparent blur-2xl sm:blur-3xl pointer-events-none -z-10" />
 
             {/* Mouse Parallax Container for Portrait */}
             <motion.div
@@ -208,7 +208,7 @@ export default function Developers() {
                 x: shouldReduceMotion ? 0 : mousePosition.x * 0.4,
                 y: shouldReduceMotion ? 0 : mousePosition.y * 0.4,
               }}
-              className="relative w-full max-w-[460px] aspect-[4/5] rounded-[32px] overflow-hidden bg-card/60 dark:bg-slate-950/20 backdrop-blur-3xl shadow-xl dark:shadow-[0_50px_100px_rgba(0,0,0,0.7)] border border-border dark:border-white/10 group"
+              className="relative w-full max-w-[460px] aspect-[4/5] rounded-[32px] overflow-hidden bg-card/60 dark:bg-slate-950/20 backdrop-blur-md sm:backdrop-blur-3xl shadow-xl dark:shadow-[0_50px_100px_rgba(0,0,0,0.7)] border border-border dark:border-white/10 group"
             >
               {/* Glass reflection gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.04] via-transparent to-white/[0.04] pointer-events-none z-10" />
@@ -216,6 +216,7 @@ export default function Developers() {
               <img
                 src={PRIMARY_DEV.photo}
                 alt={PRIMARY_DEV.name}
+                decoding="async"
                 className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]"
               />
               
@@ -310,40 +311,7 @@ export default function Developers() {
               ))}
             </motion.div>
 
-            {/* Premium Floating Metric Cards */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0 },
-                visible: { opacity: 1, transition: { staggerChildren: 0.08 } }
-              }}
-              className="grid grid-cols-3 gap-4 w-full max-w-2xl pt-1"
-            >
-              {[
-                { label: "CGPA", value: "8.99", sub: "MITS Gwalior" },
-                { label: "Branch Rank", value: "3", sub: "CSD Branch" },
-                { label: "Institute Rank", value: "43", sub: "MITS Gwalior" }
-              ].map((metric, idx) => (
-                <motion.div
-                  key={idx}
-                  variants={{
-                    hidden: { opacity: 0, y: 20 },
-                    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
-                  }}
-                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                  className="backdrop-blur-xl bg-card/80 dark:bg-white/[0.02] border border-border dark:border-white/[0.07] hover:border-primary/40 rounded-2xl p-5 flex flex-col items-center lg:items-start gap-1 shadow-md transition-colors"
-                >
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                    {metric.label}
-                  </span>
-                  <span className="text-xl sm:text-2xl font-black text-foreground dark:text-white tracking-tight">
-                    {metric.value}
-                  </span>
-                  <span className="text-[10px] font-semibold text-muted-foreground">
-                    {metric.sub}
-                  </span>
-                </motion.div>
-              ))}
-            </motion.div>
+
 
             {/* Large Premium CTA Buttons with Magnetic/Hover Effects */}
             <motion.div
@@ -545,6 +513,8 @@ export default function Developers() {
                     <img
                       src={dev.photo}
                       alt={dev.name}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover object-top rounded-[14px]"
                     />
                   </div>
