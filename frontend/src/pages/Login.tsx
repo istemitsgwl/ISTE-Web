@@ -29,6 +29,7 @@ export default function Login() {
 
   useEffect(() => {
     let active = true
+
     const initGoogleSignIn = () => {
       if (!active) return
       if (window.google?.accounts?.id) {
@@ -37,6 +38,8 @@ export default function Login() {
         if (!window.__google_gsi_initialized) {
           window.google.accounts.id.initialize({
             client_id: clientId,
+            ux_mode: "popup",
+            use_fedcm_for_prompt: true,
             callback: async (response: any) => {
               if (response.credential) {
                 setLoading(true)
