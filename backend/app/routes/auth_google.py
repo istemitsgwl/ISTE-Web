@@ -67,7 +67,7 @@ async def google_login(payload: GoogleLoginRequest, db: AsyncIOMotorDatabase = D
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid or expired Google authentication token."
+            detail=f"Invalid or expired Google authentication token: {last_verification_error}"
         )
 
     email = id_info.get("email", "").lower().strip()

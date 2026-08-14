@@ -62,6 +62,7 @@ export const useAuthStore = create<AuthState>((set) => {
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}))
+          console.error("Google Auth Backend Response Error:", errData)
           throw new Error(errData.detail || 'Authorization failed. Unregistered Google account.')
         }
 
