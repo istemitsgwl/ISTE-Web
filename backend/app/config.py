@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 1440  # 24 hours
-    GOOGLE_CLIENT_ID: str = "mock-google-client-id.apps.googleusercontent.com"
+    GOOGLE_CLIENT_ID: str = "1009258419935-1dgi30dfn1ev51v3gs4145cu26ibclmq.apps.googleusercontent.com"
 
     # Initial Super Admin bootstrap account (auto-seeded on first login)
     SUPER_ADMIN_EMAIL: str = "shivampatidar780@gmail.com"

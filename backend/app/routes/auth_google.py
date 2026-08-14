@@ -37,23 +37,42 @@ async def google_login(payload: GoogleLoginRequest, db: AsyncIOMotorDatabase = D
     name = ""
     picture = ""
 
-    try:
-        # Verify Google OAuth 2.0 ID Token against setting Client ID
-        id_info = id_token.verify_oauth2_token(
-            token_str,
-            requests.Request(),
-            audience=settings.GOOGLE_CLIENT_ID,
-            clock_skew_in_seconds=10
+    # Prepare allowed audiences list (support comma-separated env values and default prod ID)
+    default_prod_client_id = "1009258419935-1dgi30dfn1ev51v3gs4145cu26ibclmq.apps.googleusercontent.com"
+    configured_audiences = [
+        cid.strip() for cid in settings.GOOGLE_CLIENT_ID.split(",") if cid.strip()
+    ]
+    if default_prod_client_id not in configured_audiences:
+        configured_audiences.append(default_prod_client_id)
+
+    id_info = None
+    last_verification_error = None
+
+    for aud in configured_audiences:
+        try:
+            id_info = id_token.verify_oauth2_token(
+                token_str,
+                requests.Request(),
+                audience=aud,
+                clock_skew_in_seconds=60
+            )
+            if id_info:
+                break
+        except Exception as e:
+            last_verification_error = e
+
+    if not id_info:
+        logger.warning(
+            f"Google ID Token verification failed for token. Allowed audiences: {configured_audiences}. Error: {last_verification_error}"
         )
-        email = id_info.get("email", "").lower().strip()
-        name = id_info.get("name", email.split("@")[0])
-        picture = id_info.get("picture", "")
-    except Exception as e:
-        logger.warning(f"Google ID Token verification failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired Google authentication token."
+            detail=f"Invalid or expired Google authentication token."
         )
+
+    email = id_info.get("email", "").lower().strip()
+    name = id_info.get("name", email.split("@")[0])
+    picture = id_info.get("picture", "")
 
     if not email or not id_info.get("email_verified", False):
         raise HTTPException(

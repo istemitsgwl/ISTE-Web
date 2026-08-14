@@ -35,10 +35,17 @@ if allow_all_origins:
     logger.warning("CORS is configured with a wildcard origin — credentialed requests are disabled.")
     cors_kwargs = {"allow_origins": ["*"], "allow_credentials": False}
 else:
+    prod_domains = [
+        "https://iste-web-dyis.vercel.app",
+        "https://iste-mits-website.vercel.app",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ]
+    for domain in prod_domains:
+        if domain not in origins:
+            origins.append(domain)
     if settings.FRONTEND_URL and settings.FRONTEND_URL not in origins:
         origins.append(settings.FRONTEND_URL)
-    if "http://localhost:5173" not in origins:
-        origins.append("http://localhost:5173")
     cors_kwargs = {"allow_origins": origins, "allow_credentials": True}
 
 app.add_middleware(
@@ -54,6 +61,7 @@ async def security_headers_middleware(request: Request, call_next):
     response = await call_next(request)
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Cross-Origin-Opener-Policy", "unsafe-none")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
     response.headers.setdefault("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
