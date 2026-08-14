@@ -72,8 +72,6 @@ Full instructions (env vars, Google login locally, checks before committing): [d
 ## 👨‍💻 Web Team
 
 - **Shivam Patidar** — Lead Developer & Architect
-- **Amit Vishwakarma** — Full Stack Developer
-- **Shivam Sharma** — Data Analytics & Graphic Design
 - **Ayan Ahmed Khan** — Deployment & Security Engineer
 
 *Guided by the faculty mentors of the ISTE Student's Chapter, MITS-DU Gwalior.*
