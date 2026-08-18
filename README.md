@@ -1,4 +1,4 @@
-# ISTE Student's Chapter MITS-DU Website
+# ISTE Student's Chapter MITS-DU Websit
 
 Official website of the **Indian Society for Technical Education (ISTE) Student's Chapter, MITS-DU Gwalior** — public site + CMS admin portal.
 
