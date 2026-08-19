@@ -153,8 +153,8 @@ export default function Contact() {
             <p className="text-xs text-muted-foreground font-medium">Public Relations & Technical Lead</p>
             <div className="text-xs sm:text-sm text-muted-foreground mt-6 flex flex-col gap-1 items-center">
               <span className="text-foreground font-extrabold text-xs sm:text-sm">Shivam Patidar</span>
-              <a href="tel:9302077780" className="text-primary hover:underline text-xs sm:text-sm font-black">
-                +91 9302077780
+              <a href="tel:9926245805" className="text-primary hover:underline text-xs sm:text-sm font-black">
+                +91 9926245805
               </a>
             </div>
           </BorderGlowCard>

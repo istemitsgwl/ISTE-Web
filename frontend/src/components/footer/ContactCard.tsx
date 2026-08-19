@@ -12,7 +12,7 @@ interface ContactCardProps {
 
 export function ContactCard({ contactData }: ContactCardProps) {
   const email = contactData?.email || "iste.mits.gwl@gmail.com"
-  const phone = contactData?.phone || "9302077780"
+  const phone = contactData?.phone || "9926245805"
   const address = contactData?.address || "MITS Gwalior, Madhya Pradesh, India"
 
   return (

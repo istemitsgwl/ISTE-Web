@@ -419,6 +419,6 @@ async def get_contact(db: AsyncIOMotorDatabase = Depends(get_mongo_db)):
     
     return {
         "email": "iste.mits.gwl@gmail.com",
-        "phone": "9302077780",
+        "phone": "9926245805",
         "address": "MITS Gwalior, Madhya Pradesh, India"
     }
