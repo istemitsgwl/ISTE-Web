@@ -118,7 +118,7 @@ const WEB_MENTOR = {
   id: "ayan-ahmed-khan",
   photo: ayanAhmedKhanPortrait,
   name: "Ayan Ahmed Khan",
-  headline: "Web Design & Deployment Mentor",
+  headline: "Mentor & Tech Head",
   subHeadline: "Applied AI Intern @ Dexter Capital • Deployment & Security Engineer",
   branchCollege: "Information Technology (IoT) • MITS Gwalior • Batch 2023–27",
   bio: "Information Technology (IoT) undergraduate at MITS Gwalior and Applied AI Intern at Dexter Capital, working on trustworthy machine learning, RAG and agentic AI systems, and backend engineering. Mentors the ISTE web team on modern web design and engineering practices, and architected the production deployment of this platform — Vercel multi-service infrastructure, API security hardening, and rate limiting.",
@@ -600,7 +600,7 @@ export default function Developers() {
               MENTORED BY
             </span>
             <h2 className="text-2xl sm:text-4xl font-black text-card-foreground dark:text-white">
-              Web Team Mentor
+              Mentor 
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground font-medium max-w-2xl">
               Guiding the ISTE web team on modern web design, engineering practices, and production-grade deployment.
@@ -629,7 +629,7 @@ export default function Developers() {
                   {/* Mentor Badge */}
                   <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest shadow-lg whitespace-nowrap">
                     <Shield className="w-3 h-3" />
-                    <span>Team Mentor</span>
+                    <span>Mentor & Tech Head</span>
                   </div>
                 </div>
 
