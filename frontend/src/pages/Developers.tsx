@@ -720,7 +720,7 @@ export default function Developers() {
               "Great software is not built by one person. It is crafted through collaboration, curiosity, and continuous learning."
             </blockquote>
             <p className="text-xs font-bold uppercase tracking-widest text-primary">
-              — Shivam Patidar & ISTE Web Engineering Team
+              — ISTE Web Engineering Team
             </p>
           </div>
         </ScrollReveal>
