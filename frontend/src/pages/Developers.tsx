@@ -147,12 +147,12 @@ const WEB_MENTORS = [
     roleBadge: "Technical Head & Management Coordinator",
     headline: "Technical Head, ISTE-2026 · Management Coordinator, ISTE-2027",
     subHeadline: "AI Intern @ ResoluteCorp • Full-Stack & AI Developer",
-    branchCollege: "Computer Science & Design (CSD) • MITS Gwalior • Batch 2023–27",
+    branchCollege: "Computer Science & Design (CSD) • 1st Runner-Up — Manthan Hackathon 1.0, MANIT Bhopal • MITS Gwalior • Batch 2023–27",
     stats: [
       { label: "CGPA", value: "8.89" },
       { label: "Branch & Dept Rank", value: "3rd" }
     ],
-    bio: "Computer Science & Design undergraduate and AI intern passionate about building intelligent, scalable, and user-centric applications. Experienced in full-stack development, Generative AI, RAG, machine learning, prompt engineering, and cloud deployment. As Technical Head at ISTE, she leads website development, digital experience enhancements, and technical initiatives.",
+    bio: "Computer Science & Design undergraduate and AI intern passionate about building intelligent, scalable, and user-centric applications. Experienced in full-stack development, Generative AI, RAG, machine learning, prompt engineering, and cloud deployment. As Technical Head at ISTE, she leads website development, digital experience enhancements, technical initiatives, and management event coordination.",
     expertise: [
       "Full-Stack Development",
       "Generative AI & RAG",
