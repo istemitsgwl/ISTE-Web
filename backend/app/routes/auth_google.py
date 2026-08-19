@@ -83,8 +83,8 @@ async def google_login(payload: GoogleLoginRequest, db: AsyncIOMotorDatabase = D
     # Query MongoDB admins collection
     admin_record = await db.admins.find_one({"email": email})
 
-    # Auto-seed the configured initial Super Admin account on first login
-    if not admin_record and settings.SUPER_ADMIN_EMAIL and email == settings.SUPER_ADMIN_EMAIL.lower().strip():
+    # Auto-seed configured bootstrap Super Admin account(s) on first login
+    if not admin_record and email in settings.super_admin_emails():
         super_admin_doc = {
             "email": email,
             "name": name or "Super Admin",

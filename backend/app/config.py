@@ -26,8 +26,14 @@ class Settings(BaseSettings):
     JWT_EXPIRE_MINUTES: int = 1440  # 24 hours
     GOOGLE_CLIENT_ID: str = "1009258419935-1dgi30dfn1ev51v3gs4145cu26ibclmq.apps.googleusercontent.com"
 
-    # Initial Super Admin bootstrap account (auto-seeded on first login)
+    # Initial Super Admin bootstrap account(s), auto-seeded on startup / first login.
+    # Accepts a single email or a comma-separated list, e.g.
+    # SUPER_ADMIN_EMAIL=one@gmail.com,two@gmail.com
     SUPER_ADMIN_EMAIL: str = "shivampatidar780@gmail.com"
+
+    def super_admin_emails(self) -> list[str]:
+        """Parsed, normalized list of bootstrap Super Admin emails."""
+        return [e.strip().lower() for e in (self.SUPER_ADMIN_EMAIL or "").split(",") if e.strip()]
 
     # Server configuration
     PORT: int = 8000
