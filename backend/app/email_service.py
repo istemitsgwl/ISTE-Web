@@ -17,10 +17,10 @@ def send_contact_notification_email(
     user_agent: str
 ) -> bool:
     """
-    Sends an immediate email notification for a new contact form submission to shivampatidar780@gmail.com.
+    Sends an immediate email notification for a new contact form submission to iste.mits.gwl@gmail.com.
     Tries Resend API first, then fallback to SMTP/Gmail. Returns True if sent, False if delivery failed.
     """
-    recipient = settings.NOTIFICATION_EMAIL or "shivampatidar780@gmail.com"
+    recipient = settings.NOTIFICATION_EMAIL or "iste.mits.gwl@gmail.com"
     # Strip CR/LF to prevent email header injection via the user-supplied subject
     safe_subject = subject.replace("\r", " ").replace("\n", " ").strip()[:150]
     email_subject = f"New Contact Form Submission: {safe_subject}"

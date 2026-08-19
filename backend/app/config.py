@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
-    NOTIFICATION_EMAIL: str = "shivampatidar780@gmail.com"
+    NOTIFICATION_EMAIL: str = "iste.mits.gwl@gmail.com"
 
     model_config = SettingsConfigDict(
         env_file=".env",
