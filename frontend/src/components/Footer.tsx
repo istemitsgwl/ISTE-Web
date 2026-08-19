@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { Linkedin, Instagram, Sparkles } from "lucide-react"
 import isteStandaloneLogo from "@/assets/iste-standalone-logo.png"
 import isteStandaloneLogoLight from "@/assets/iste-standalone-logo-light.png"
-import sdcLogo from "@/assets/sdc-logo.png"
+import sdcLogo from "@/assets/sdc-logo.webp"
 import { useTheme } from "@/context/ThemeContext"
 
 import { FooterSection } from "./footer/FooterSection"
@@ -163,29 +163,27 @@ export default function Footer() {
         {/* BOTTOM COPYRIGHT BAR */}
         <div className="pt-5 sm:pt-6 border-t border-border/50 dark:border-border/20 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-semibold">
           <p>© {new Date().getFullYear()} ISTE Student Chapter MITS. All Rights Reserved.</p>
-          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
-            <Link to="/developers" className="flex items-center gap-2 text-[11px] group hover:brightness-110 transition-all">
-              <Sparkles className="w-3.5 h-3.5 text-primary group-hover:animate-pulse" />
-              <span className="text-[#CF9FFF] dark:text-[#CF9FFF] [.light_&]:text-[#7C3AED] font-extrabold hover:underline decoration-primary decoration-2 underline-offset-4">
-                Designed & Developed by ISTE Web Team
-              </span>
-            </Link>
-            <a
-              href="https://sdc.mitsgwalior.in/"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 text-[11px] group hover:brightness-110 transition-all"
-            >
-              <img
-                src={sdcLogo}
-                alt="Software Development Club MITS Gwalior"
-                className="w-5 h-5 object-contain rounded-full transition-transform duration-300 group-hover:rotate-[8deg]"
-              />
-              <span className="font-extrabold text-foreground/80 group-hover:text-primary hover:underline decoration-primary decoration-2 underline-offset-4 transition-colors">
-                Powered by SDC
-              </span>
-            </a>
-          </div>
+          <Link to="/developers" className="flex items-center gap-2 text-[11px] group hover:brightness-110 transition-all">
+            <Sparkles className="w-3.5 h-3.5 text-primary group-hover:animate-pulse" />
+            <span className="text-[#CF9FFF] dark:text-[#CF9FFF] [.light_&]:text-[#7C3AED] font-extrabold hover:underline decoration-primary decoration-2 underline-offset-4">
+              Designed & Developed by ISTE Web Team
+            </span>
+          </Link>
+          <a
+            href="https://sdc.mitsgwalior.in/"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 text-[11px] group hover:brightness-110 transition-all"
+          >
+            <img
+              src={sdcLogo}
+              alt="Software Development Club MITS Gwalior"
+              className="w-6 h-6 object-contain rounded-full transition-transform duration-300 group-hover:rotate-[8deg]"
+            />
+            <span className="font-extrabold text-foreground/80 group-hover:text-primary hover:underline decoration-primary decoration-2 underline-offset-4 transition-colors">
+              Powered by SDC
+            </span>
+          </a>
         </div>
 
         {/* OVERSIZED BRAND TYPOGRAPHY SECTION */}
