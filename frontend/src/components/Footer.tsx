@@ -4,6 +4,7 @@ import { Linkedin, Instagram, Sparkles } from "lucide-react"
 import isteStandaloneLogo from "@/assets/iste-standalone-logo.png"
 import isteStandaloneLogoLight from "@/assets/iste-standalone-logo-light.png"
 import sdcLogo from "@/assets/sdc-logo.webp"
+import mitsLogo from "@/assets/mits-logo.png"
 import { useTheme } from "@/context/ThemeContext"
 
 import { FooterSection } from "./footer/FooterSection"
@@ -169,25 +170,44 @@ export default function Footer() {
               Designed & Developed by ISTE Web Team
             </span>
           </Link>
-          <a
-            href="https://sdc.mitsgwalior.in/"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-2 text-[11px] group hover:brightness-110 transition-all"
-          >
-            <img
-              src={sdcLogo}
-              alt="Software Development Club MITS Gwalior"
-              className="w-6 h-6 object-contain rounded-full transition-transform duration-300 group-hover:rotate-[8deg]"
-            />
-            <span className="font-extrabold text-foreground/80 group-hover:text-primary hover:underline decoration-primary decoration-2 underline-offset-4 transition-colors">
-              Powered by SDC
-            </span>
-          </a>
         </div>
 
         {/* OVERSIZED BRAND TYPOGRAPHY SECTION */}
         <FooterBrand />
+      </div>
+
+      {/* POWERED BY SDC + MITS GWALIOR — PINNED BOTTOM-RIGHT CORNER */}
+      <div className="absolute bottom-3 right-3 sm:bottom-5 sm:right-6 z-20 flex flex-col sm:flex-row items-end sm:items-center gap-2">
+        <a
+          href="https://sdc.mitsgwalior.in/"
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/70 dark:bg-white/[0.04] border border-border/60 dark:border-white/[0.08] backdrop-blur-md shadow-md group hover:border-primary/50 transition-all"
+        >
+          <img
+            src={sdcLogo}
+            alt="Software Development Club MITS Gwalior"
+            className="w-6 h-6 object-contain rounded-full transition-transform duration-300 group-hover:rotate-[8deg]"
+          />
+          <span className="text-[11px] font-extrabold text-foreground/80 group-hover:text-primary transition-colors whitespace-nowrap">
+            Powered by SDC
+          </span>
+        </a>
+        <a
+          href="https://web.mitsgwalior.in/"
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/70 dark:bg-white/[0.04] border border-border/60 dark:border-white/[0.08] backdrop-blur-md shadow-md group hover:border-primary/50 transition-all"
+        >
+          <img
+            src={mitsLogo}
+            alt="MITS Gwalior"
+            className="w-6 h-6 object-contain transition-transform duration-300 group-hover:rotate-[8deg]"
+          />
+          <span className="text-[11px] font-extrabold text-foreground/80 group-hover:text-primary transition-colors whitespace-nowrap">
+            MITS Gwalior
+          </span>
+        </a>
       </div>
     </footer>
   )
