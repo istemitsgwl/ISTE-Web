@@ -150,9 +150,9 @@ export default function Contact() {
               <Phone className="w-6 h-6 text-secondary" />
             </div>
             <h3 className="text-lg font-bold mb-2">Call Contacts</h3>
-            <p className="text-xs text-muted-foreground font-medium">Public Relations & Technical Lead</p>
+            <p className="text-xs text-muted-foreground font-medium">Faculty Coordinator, ISTE MITS</p>
             <div className="text-xs sm:text-sm text-muted-foreground mt-6 flex flex-col gap-1 items-center">
-              <span className="text-foreground font-extrabold text-xs sm:text-sm">Shivam Patidar</span>
+              <span className="text-foreground font-extrabold text-xs sm:text-sm">Prof. Vishal Chaudhary</span>
               <a href="tel:9926245805" className="text-primary hover:underline text-xs sm:text-sm font-black">
                 +91 9926245805
               </a>
