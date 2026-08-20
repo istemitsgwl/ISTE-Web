@@ -144,8 +144,8 @@ const WEB_MENTORS = [
     id: "khushi-goyal",
     photo: khushiGoyalPortrait,
     name: "Khushi Goyal",
-    roleBadge: "Technical Head & Management Coordinator",
-    headline: "Technical Head, ISTE-2026 · Management Coordinator, ISTE-2027",
+    roleBadge: "Technical Head",
+    headline: "Technical Head, ISTE-2026 · Management Coordinator, ISTE-2025",
     subHeadline: "AI Intern @ ResoluteCorp • Full-Stack & AI Developer",
     branchCollege: "Computer Science & Design (CSD) • 1st Runner-Up — Manthan Hackathon 1.0, MANIT Bhopal • MITS Gwalior • Batch 2023–27",
     stats: [
