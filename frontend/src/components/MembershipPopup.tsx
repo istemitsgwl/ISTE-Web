@@ -9,6 +9,11 @@ import posterJpg from "@/assets/membership-poster.jpg"
 export const MEMBERSHIP_REGISTRATION_URL =
   import.meta.env.VITE_MEMBERSHIP_REGISTRATION_URL || "https://linktr.ee/iste_mits_gwl"
 
+// Helper function to reopen the existing Membership Popup from anywhere (e.g. Hero section trigger)
+export const openMembershipPopup = () => {
+  window.dispatchEvent(new CustomEvent("open-membership-popup"))
+}
+
 const POPUP_STORAGE_KEY = "iste_membership_popup_dismissed_v1"
 
 export default function MembershipPopup() {
@@ -16,6 +21,18 @@ export default function MembershipPopup() {
   const location = useLocation()
   const modalRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
+
+  // Listen for custom reopen event from Hero trigger or other buttons
+  useEffect(() => {
+    const handleCustomOpen = () => {
+      setIsOpen(true)
+    }
+
+    window.addEventListener("open-membership-popup", handleCustomOpen)
+    return () => {
+      window.removeEventListener("open-membership-popup", handleCustomOpen)
+    }
+  }, [])
 
   useEffect(() => {
     // Do not display on admin or login routes
