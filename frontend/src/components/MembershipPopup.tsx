@@ -7,7 +7,7 @@ import posterJpg from "@/assets/membership-poster.jpg"
 
 // Configurable Membership Registration URL
 export const MEMBERSHIP_REGISTRATION_URL =
-  import.meta.env.VITE_MEMBERSHIP_REGISTRATION_URL || "https://forms.gle/iste-mits-membership-2026"
+  import.meta.env.VITE_MEMBERSHIP_REGISTRATION_URL || "https://linktr.ee/iste_mits_gwl"
 
 const POPUP_STORAGE_KEY = "iste_membership_popup_dismissed_v1"
 
