@@ -118,94 +118,97 @@ export default function Home() {
       {/* Grid Pattern overlay (Extends from Hero through Our Foundation section) */}
       <div className="absolute top-0 inset-x-0 h-[1700px] sm:h-[1950px] md:h-[2100px] grid-overlay pointer-events-none opacity-60 z-0" />
 
-      {/* VERTICAL LEFT SIDE TRIGGER — "MEMBERSHIP IS LIVE NOW" (IEEE STYLE SCREEN EDGE BADGE) */}
-      <button
-        onClick={openMembershipPopup}
-        aria-label="Reopen Membership Announcement Popup"
-        className="hidden lg:flex fixed -left-14 xl:-left-12 top-[48%] -translate-y-1/2 z-40 items-center gap-3 px-4 py-2 rounded-full bg-[#080b1a]/90 dark:bg-[#080b1a]/95 [.light_&]:bg-white/95 border border-primary/40 hover:border-primary text-xs font-extrabold text-white [.light_&]:text-slate-900 shadow-[0_0_20px_rgba(207,159,255,0.25)] hover:shadow-[0_0_35px_rgba(207,159,255,0.5)] hover:scale-105 transition-all duration-300 backdrop-blur-md group cursor-pointer select-none -rotate-90 origin-center whitespace-nowrap"
-      >
-        <span className="relative flex h-2.5 w-2.5 shrink-0">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-        </span>
-        <span className="tracking-[0.2em] uppercase font-mono text-[10.5px] font-bold text-[#CF9FFF] dark:text-[#CF9FFF] [.light_&]:text-[#7C3AED]">
-          Membership is Live Now
-        </span>
-        <Sparkles className="w-3.5 h-3.5 text-primary group-hover:rotate-12 transition-transform duration-300" />
-      </button>
-
-      {/* HERO SECTION */}
-      <section className="relative pt-28 sm:pt-32 md:pt-36 pb-2 px-4 sm:px-6 container mx-auto text-center max-w-5xl z-20">
-        {/* MOBILE / TABLET VIEW: COMPACT HORIZONTAL TRIGGER PILL */}
-        <div className="lg:hidden flex justify-center mb-4 z-30">
-          <button
-            onClick={openMembershipPopup}
-            aria-label="Reopen Membership Announcement Popup"
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 dark:bg-[#090d24]/90 [.light_&]:bg-white/90 border border-primary/40 text-xs font-extrabold text-white [.light_&]:text-slate-900 shadow-md backdrop-blur-md hover:scale-105 transition-all"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="tracking-wide text-[11px]">Membership is Live Now</span>
-            <ArrowRight className="w-3.5 h-3.5 text-primary" />
-          </button>
-        </div>
-
-        {/* TOP SUB-HEADER BADGE */}
-        <div className="mb-6 sm:mb-8 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-secondary/20 bg-secondary/10 backdrop-blur-md text-xs font-extrabold text-secondary tracking-wider uppercase select-none">
-          <Zap className="w-3.5 h-3.5 text-secondary" />
-          <DecryptedText text="EMPOWERING FUTURE ENGINEERS" speed={50} delay={0.2} />
-        </div>
-
-        <h1 className="flex flex-col items-center gap-1 sm:gap-2 tracking-tight leading-[1.05] mb-6 sm:mb-8 select-none">
-          <SplitText 
-            text="Indian Society for" 
-            type="words" 
-            className="text-[2.2rem] sm:text-[4rem] md:text-[5rem] font-light font-serif text-card-foreground dark:text-[#F6F3EC]" 
-          />
-          <SplitText 
-            text="Technical Education" 
-            type="words" 
-            className="font-serif italic font-normal text-[2.75rem] sm:text-[4.8rem] md:text-[6.2rem] bg-gradient-to-r from-[#CF9FFF] to-[#F6F3EC] dark:from-[#CF9FFF] dark:to-[#F6F3EC] [.light_&]:from-[#7F00FF] [.light_&]:to-[#111827] bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(207,159,255,0.2)] [.light_&]:drop-shadow-[0_0_15px_rgba(127,0,255,0.15)]" 
-          />
-        </h1>
-
-        <ScrollReveal delay={0.3} yOffset={15}>
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8 sm:mb-10 leading-relaxed font-medium">
-            ISTE is a national professional organization fostering technical education,
-            innovation, and leadership among students and educators.
-          </p>
-        </ScrollReveal>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-2 relative z-30 pointer-events-auto"
+      {/* HERO SECTION WRAPPER */}
+      <div className="relative w-full z-20">
+        {/* VERTICAL LEFT SIDE TRIGGER — "MEMBERSHIP IS LIVE NOW" (ABSOLUTE TO HERO SECTION ONLY) */}
+        <button
+          onClick={openMembershipPopup}
+          aria-label="Reopen Membership Announcement Popup"
+          className="hidden lg:flex absolute -left-18 xl:-left-16 top-[76%] -translate-y-1/2 z-30 items-center gap-3 px-4 py-2 rounded-full bg-[#080b1a]/90 dark:bg-[#080b1a]/95 [.light_&]:bg-white/95 border border-primary/40 hover:border-primary text-xs font-extrabold text-white [.light_&]:text-slate-900 shadow-[0_0_20px_rgba(207,159,255,0.25)] hover:shadow-[0_0_35px_rgba(207,159,255,0.5)] hover:scale-105 transition-all duration-300 backdrop-blur-md group cursor-pointer select-none -rotate-90 origin-center whitespace-nowrap"
         >
-          <Button
-            asChild
-            size="lg"
-            className="w-full sm:w-auto rounded-full font-bold shadow-md hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 group text-sm cursor-pointer"
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+          </span>
+          <span className="tracking-[0.2em] uppercase font-mono text-[10.5px] font-bold text-[#CF9FFF] dark:text-[#CF9FFF] [.light_&]:text-[#7C3AED]">
+            Membership is Live Now
+          </span>
+          <Sparkles className="w-3.5 h-3.5 text-primary group-hover:rotate-12 transition-transform duration-300" />
+        </button>
+
+        {/* HERO SECTION CONTENT */}
+        <section className="relative pt-28 sm:pt-32 md:pt-36 pb-2 px-4 sm:px-6 container mx-auto text-center max-w-5xl z-20">
+          {/* MOBILE / TABLET VIEW: COMPACT HORIZONTAL TRIGGER PILL */}
+          <div className="lg:hidden flex justify-center mb-4 z-30">
+            <button
+              onClick={openMembershipPopup}
+              aria-label="Reopen Membership Announcement Popup"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 dark:bg-[#090d24]/90 [.light_&]:bg-white/90 border border-primary/40 text-xs font-extrabold text-white [.light_&]:text-slate-900 shadow-md backdrop-blur-md hover:scale-105 transition-all"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span className="tracking-wide text-[11px]">Membership is Live Now</span>
+              <ArrowRight className="w-3.5 h-3.5 text-primary" />
+            </button>
+          </div>
+
+          {/* TOP SUB-HEADER BADGE */}
+          <div className="mb-6 sm:mb-8 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-secondary/20 bg-secondary/10 backdrop-blur-md text-xs font-extrabold text-secondary tracking-wider uppercase select-none">
+            <Zap className="w-3.5 h-3.5 text-secondary" />
+            <DecryptedText text="EMPOWERING FUTURE ENGINEERS" speed={50} delay={0.2} />
+          </div>
+
+          <h1 className="flex flex-col items-center gap-1 sm:gap-2 tracking-tight leading-[1.05] mb-6 sm:mb-8 select-none">
+            <SplitText 
+              text="Indian Society for" 
+              type="words" 
+              className="text-[2.2rem] sm:text-[4rem] md:text-[5rem] font-light font-serif text-card-foreground dark:text-[#F6F3EC]" 
+            />
+            <SplitText 
+              text="Technical Education" 
+              type="words" 
+              className="font-serif italic font-normal text-[2.75rem] sm:text-[4.8rem] md:text-[6.2rem] bg-gradient-to-r from-[#CF9FFF] to-[#F6F3EC] dark:from-[#CF9FFF] dark:to-[#F6F3EC] [.light_&]:from-[#7F00FF] [.light_&]:to-[#111827] bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(207,159,255,0.2)] [.light_&]:drop-shadow-[0_0_15px_rgba(127,0,255,0.15)]" 
+            />
+          </h1>
+
+          <ScrollReveal delay={0.3} yOffset={15}>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8 sm:mb-10 leading-relaxed font-medium">
+              ISTE is a national professional organization fostering technical education,
+              innovation, and leadership among students and educators.
+            </p>
+          </ScrollReveal>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-2 relative z-30 pointer-events-auto"
           >
-            <Link to="/about">
-              Explore More
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="lg"
-            className="w-full sm:w-auto rounded-full font-bold shadow-sm flex items-center justify-center gap-2 text-sm cursor-pointer"
-          >
-            <Link to="/events">
-              Our Events
-            </Link>
-          </Button>
-        </motion.div>
-      </section>
+            <Button
+              asChild
+              size="lg"
+              className="w-full sm:w-auto rounded-full font-bold shadow-md hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 group text-sm cursor-pointer"
+            >
+              <Link to="/about">
+                Explore More
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="w-full sm:w-auto rounded-full font-bold shadow-sm flex items-center justify-center gap-2 text-sm cursor-pointer"
+            >
+              <Link to="/events">
+                Our Events
+              </Link>
+            </Button>
+          </motion.div>
+        </section>
+      </div>
 
       {/* WEBGL CIRCULAR GALLERY SHOWCASE */}
       <section className="relative w-full z-10 -mt-12 sm:-mt-16 mb-8">
