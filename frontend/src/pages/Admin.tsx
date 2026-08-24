@@ -406,8 +406,12 @@ export default function Admin() {
   // Convert and compress file to base64 string
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
+      const fileNameLower = file.name.toLowerCase()
+      const isHeic = fileNameLower.endsWith(".heic") || fileNameLower.endsWith(".heif") || file.type.includes("heic") || file.type.includes("heif")
+
       const reader = new FileReader()
       reader.onload = (e) => {
+        const rawResult = e.target?.result as string
         const img = new window.Image()
         img.onload = () => {
           const maxDim = 1200
@@ -430,15 +434,28 @@ export default function Admin() {
           const ctx = canvas.getContext("2d")
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height)
-            resolve(canvas.toDataURL("image/jpeg", 0.85))
+            const compressed = canvas.toDataURL("image/jpeg", 0.8)
+            resolve(compressed)
           } else {
-            resolve(e.target?.result as string)
+            if (rawResult.length > 3 * 1024 * 1024) {
+              reject(new Error("Selected image file size is too large (over 3MB). Please choose a smaller image."))
+            } else {
+              resolve(rawResult)
+            }
           }
         }
-        img.onerror = () => resolve(e.target?.result as string)
-        img.src = e.target?.result as string
+        img.onerror = () => {
+          if (isHeic) {
+            reject(new Error("HEIC image format (iPhone photo) is not directly supported by browser canvas. Please convert your photo to JPG or PNG before uploading."))
+          } else if (rawResult.length > 3 * 1024 * 1024) {
+            reject(new Error("Selected image file size is too large (over 3MB). Please choose a smaller JPG or PNG image."))
+          } else {
+            resolve(rawResult)
+          }
+        }
+        img.src = rawResult
       }
-      reader.onerror = reject
+      reader.onerror = () => reject(new Error("Failed to read image file."))
       reader.readAsDataURL(file)
     })
   }
@@ -494,6 +511,9 @@ export default function Admin() {
       })
 
       if (!res.ok) {
+        if (res.status === 413) {
+          throw new Error("Payload Too Large (413): Event banner image size is too large. Please select a smaller JPG or PNG image.")
+        }
         throw new Error("Failed to save event via REST API")
       }
 
@@ -503,9 +523,9 @@ export default function Admin() {
       setNewEvent({ title: "", category: "Technical Fest", date: "", venue: "", desc: "", status: "upcoming", bannerImage: "" })
       setEditingEventId(null)
       setEventBannerFile(null)
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save event:", err)
-      alert("Failed to save event.")
+      alert(err.message || "Failed to save event.")
     } finally {
       setEventBannerUploading(false)
     }
@@ -595,6 +615,9 @@ export default function Admin() {
       })
 
       if (!res.ok) {
+        if (res.status === 413) {
+          throw new Error("Upload Failed (413 Payload Too Large): Image payload exceeds server limits. Please select a smaller JPG or PNG image.")
+        }
         const err = await res.json().catch(() => ({}))
         throw new Error(err.detail || "Upload failed")
       }
