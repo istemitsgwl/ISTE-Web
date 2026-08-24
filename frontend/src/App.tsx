@@ -21,6 +21,7 @@ import Developers from "@/pages/Developers"
 
 import { ThemeProvider, useTheme } from "@/context/ThemeContext"
 import ClickSpark from "@/components/ClickSpark"
+import MembershipPopup from "@/components/MembershipPopup"
 
 const PageLoader = () => (
   <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -44,6 +45,7 @@ function AppContent() {
     >
       <div className="flex flex-col min-h-screen bg-transparent text-foreground transition-all duration-700 selection:bg-primary selection:text-primary-foreground overflow-x-hidden w-full">
         <Navbar />
+        <MembershipPopup />
         <main className="flex-1">
           <Suspense fallback={<PageLoader />}>
             <Routes>
