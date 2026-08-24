@@ -113,6 +113,8 @@ def upload_image_to_cloudinary_unified(image_url: str = None, file: any = None, 
             }
         except Exception as e:
             logger.error(f"Cloudinary upload from URL/Base64 failed in unified helper: {e}")
+            if url_str.startswith("data:image/") or url_str.startswith("http") or url_str.startswith("/"):
+                return {"url": url_str, "public_id": ""}
             raise RuntimeError(f"Failed to upload image URL/Base64 to Cloudinary: {e}")
 
     return {"url": "", "public_id": ""}

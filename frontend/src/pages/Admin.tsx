@@ -575,13 +575,19 @@ export default function Admin() {
       formData.append("category", newGalleryCategory)
 
       if (galleryInputMode === "file" && galleryFile) {
-        formData.append("file", galleryFile)
+        const compressedBase64 = await fileToBase64(galleryFile)
+        formData.append("imageUrl", compressedBase64)
       } else if (galleryUrlInput.trim()) {
         formData.append("imageUrl", galleryUrlInput.trim())
       }
 
-      const res = await fetch(`${apiBase}/content/gallery`, {
-        method: "POST",
+      const url = editingGalleryItem 
+        ? `${apiBase}/content/gallery/${editingGalleryItem.id}` 
+        : `${apiBase}/content/gallery`
+      const method = editingGalleryItem ? "PUT" : "POST"
+
+      const res = await fetch(url, {
+        method,
         headers: {
           ...getAuthHeaders()
         },
@@ -593,10 +599,11 @@ export default function Admin() {
         throw new Error(err.detail || "Upload failed")
       }
 
-      setGallerySuccess("Gallery item saved successfully!")
+      setGallerySuccess(editingGalleryItem ? "Gallery item updated successfully!" : "Gallery item saved successfully!")
       setNewGalleryTitle("")
       setGalleryFile(null)
       setGalleryUrlInput("")
+      setEditingGalleryItem(null)
       await refreshAdminData()
     } catch (err: any) {
       console.error(err)
@@ -663,7 +670,8 @@ export default function Admin() {
       formData.append("linkedin", newMemberLinkedin.trim())
 
       if (memberInputMode === "file" && memberFile) {
-        formData.append("file", memberFile)
+        const compressedBase64 = await fileToBase64(memberFile)
+        formData.append("imageUrl", compressedBase64)
       } else if (memberUrlInput.trim()) {
         formData.append("imageUrl", memberUrlInput.trim())
       }

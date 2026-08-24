@@ -377,22 +377,19 @@ async def delete_gallery_image(
     except Exception:
         pass
 
-    if oid:
-        doc = await db.gallery.find_one({"$or": [{"_id": oid}, {"id": imageId}]})
-    else:
-        doc = await db.gallery.find_one({"id": imageId})
+    query_filter = {"$or": [{"_id": oid}, {"id": imageId}, {"_id": imageId}]} if oid else {"$or": [{"id": imageId}, {"_id": imageId}]}
+    doc = await db.gallery.find_one(query_filter)
 
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Gallery item not found")
 
     if doc.get("cloudinaryPublicId"):
-        delete_image_from_cloudinary(doc.get("cloudinaryPublicId"))
+        try:
+            delete_image_from_cloudinary(doc.get("cloudinaryPublicId"))
+        except Exception as e:
+            logger.warning(f"Failed to delete Cloudinary asset for gallery item {imageId}: {e}")
 
-    if oid:
-        await db.gallery.delete_one({"$or": [{"_id": oid}, {"id": imageId}]})
-    else:
-        await db.gallery.delete_one({"id": imageId})
-        
+    await db.gallery.delete_one(query_filter)
     return {"message": "Gallery item deleted successfully", "id": imageId}
 
 @router.get("/faqs")
