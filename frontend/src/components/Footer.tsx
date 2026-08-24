@@ -174,10 +174,45 @@ export default function Footer() {
 
         {/* OVERSIZED BRAND TYPOGRAPHY SECTION */}
         <FooterBrand />
+
+        {/* MOBILE VIEW: POWERED BY SDC (LEFT) & MITS GWALIOR (RIGHT) BELOW ISTE BRAND TEXT */}
+        <div className="flex sm:hidden items-center justify-between gap-2 mt-4 pb-2 w-full">
+          <a
+            href="https://sdc.mitsgwalior.in/"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/80 dark:bg-white/[0.06] border border-border/60 dark:border-white/[0.08] backdrop-blur-md shadow-md group hover:border-primary/50 transition-all"
+          >
+            <img
+              src={sdcLogo}
+              alt="Software Development Club MITS Gwalior"
+              className="w-5 h-5 object-contain rounded-full transition-transform duration-300 group-hover:rotate-[8deg]"
+            />
+            <span className="text-[10.5px] font-extrabold text-foreground/80 group-hover:text-primary transition-colors whitespace-nowrap">
+              Powered by SDC
+            </span>
+          </a>
+
+          <a
+            href="https://web.mitsgwalior.in/"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/80 dark:bg-white/[0.06] border border-border/60 dark:border-white/[0.08] backdrop-blur-md shadow-md group hover:border-primary/50 transition-all"
+          >
+            <img
+              src={mitsLogo}
+              alt="MITS Gwalior"
+              className="w-5 h-5 object-contain transition-transform duration-300 group-hover:rotate-[8deg]"
+            />
+            <span className="text-[10.5px] font-extrabold text-foreground/80 group-hover:text-primary transition-colors whitespace-nowrap">
+              MITS Gwalior
+            </span>
+          </a>
+        </div>
       </div>
 
-      {/* POWERED BY SDC + MITS GWALIOR — PINNED BOTTOM-RIGHT CORNER */}
-      <div className="absolute bottom-3 right-3 sm:bottom-5 sm:right-6 z-20 flex flex-col sm:flex-row items-end sm:items-center gap-2">
+      {/* DESKTOP VIEW: POWERED BY SDC + MITS GWALIOR — PINNED BOTTOM-RIGHT CORNER */}
+      <div className="hidden sm:flex absolute bottom-5 right-6 z-20 items-center gap-2">
         <a
           href="https://sdc.mitsgwalior.in/"
           target="_blank"
