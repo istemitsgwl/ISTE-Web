@@ -73,6 +73,7 @@ export const useAuthStore = create<AuthState>((set) => {
         }
 
         localStorage.setItem(LOCAL_STORAGE_KEY, data.access_token)
+        localStorage.setItem('iste_google_id_token', idToken)
         localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(userProfile))
 
         set({
@@ -88,6 +89,7 @@ export const useAuthStore = create<AuthState>((set) => {
 
     logout: () => {
       localStorage.removeItem(LOCAL_STORAGE_KEY)
+      localStorage.removeItem('iste_google_id_token')
       localStorage.removeItem(LOCAL_USER_KEY)
       set({ user: null, isAuthenticated: false, loading: false })
     },

@@ -19,7 +19,7 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<"overview" | "events" | "gallery" | "team" | "registrations" | "admins" | "messages">("overview")
 
   const getAuthHeaders = (): HeadersInit => {
-    const token = localStorage.getItem("iste_admin_jwt_token")
+    const token = localStorage.getItem("iste_admin_jwt_token") || localStorage.getItem("iste_google_id_token")
     return token ? { Authorization: `Bearer ${token}` } : {}
   }
 
@@ -130,11 +130,10 @@ export default function Admin() {
     setAdminsLoading(true)
     setAdminsError("")
     const apiBase = import.meta.env.VITE_API_URL || "/api"
-    const savedToken = localStorage.getItem("iste_admin_jwt_token")
     try {
       const res = await fetch(`${apiBase}/v1/admins`, {
         headers: {
-          "Authorization": `Bearer ${savedToken}`
+          ...getAuthHeaders()
         }
       })
       if (res.ok) {
@@ -160,13 +159,12 @@ export default function Admin() {
     setAdminActionLoading(true)
     setAdminActionError("")
     const apiBase = import.meta.env.VITE_API_URL || "/api"
-    const savedToken = localStorage.getItem("iste_admin_jwt_token")
     try {
       const res = await fetch(`${apiBase}/v1/admins`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${savedToken}`
+          ...getAuthHeaders()
         },
         body: JSON.stringify({
           email: newAdminEmail.trim(),
@@ -195,7 +193,6 @@ export default function Admin() {
   const handleToggleAdminStatus = async (adminId: string, currentStatus: string) => {
     const nextStatus = currentStatus === "active" ? "disabled" : "active"
     const apiBase = import.meta.env.VITE_API_URL || "/api"
-    const savedToken = localStorage.getItem("iste_admin_jwt_token")
     
     // Optimistic UI Update
     setAdminsList(prev => prev.map(a => a.id === adminId ? { ...a, status: nextStatus } : a))
@@ -205,7 +202,7 @@ export default function Admin() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${savedToken}`
+          ...getAuthHeaders()
         },
         body: JSON.stringify({ status: nextStatus })
       })
@@ -230,14 +227,13 @@ export default function Admin() {
     if (!window.confirm(`Are you sure you want to ${actionLabel} this user?`)) return
 
     const apiBase = import.meta.env.VITE_API_URL || "/api"
-    const savedToken = localStorage.getItem("iste_admin_jwt_token")
 
     try {
       const res = await fetch(`${apiBase}/v1/admins/${adminId}/role`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${savedToken}`
+          ...getAuthHeaders()
         },
         body: JSON.stringify({ role: nextRole })
       })
@@ -256,13 +252,12 @@ export default function Admin() {
   const handleDeleteAdmin = async (adminId: string, email: string) => {
     if (!window.confirm(`Are you sure you want to permanently delete admin account "${email}"? This action cannot be undone.`)) return
     const apiBase = import.meta.env.VITE_API_URL || "/api"
-    const savedToken = localStorage.getItem("iste_admin_jwt_token")
 
     try {
       const res = await fetch(`${apiBase}/v1/admins/${adminId}`, {
         method: "DELETE",
         headers: {
-          "Authorization": `Bearer ${savedToken}`
+          ...getAuthHeaders()
         }
       })
       if (res.ok) {
