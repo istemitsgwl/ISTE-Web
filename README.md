@@ -42,7 +42,7 @@ ISTE-Web/
 ├── docs/                   # Team documentation (start here)
 └── vercel.json             # Multi-service routing + security headers
 ```
-
+ 
 ## ⚡ Quick Start
 
 ```bash
