@@ -13,7 +13,7 @@ STATIC_MENTORS = [
     {
         "id": 1,
         "name": "Dr. Manjree Pandit",
-        "designation": "Pro Vice-Chancellor, Faculty of Engineering & Technology & Chairperson, ISTE Chapter MITS-DU",
+        "designation": "Pro-Vice-Chancellor, MITS Deemed University & Chairperson, ISTE Chapter MITS-DU",
         "description": "Dr. Manjree Pandit provides visionary leadership to ISTE MITS, ensuring that the society aligns with professional standards and industry expectations.",
         "longDescription": "Dr. Manjree Pandit provides visionary leadership to ISTE MITS, ensuring that the society aligns with professional standards and industry expectations.\n\nHer mentorship inspires students to pursue innovation, ethical practices, and continuous growth.",
         "image": "/assets/mentors/manjree-pandit.jpg",
@@ -43,11 +43,15 @@ async def get_mentors(db: AsyncIOMotorDatabase = Depends(get_mongo_db)):
         async for doc in cursor:
             doc["id"] = doc.get("id") or str(doc["_id"])
             doc.pop("_id", None)
+            if doc.get("id") == 1 or doc.get("name") == "Dr. Manjree Pandit" or "manjree" in str(doc.get("name", "")).lower():
+                doc["designation"] = "Pro-Vice-Chancellor, MITS Deemed University & Chairperson, ISTE Chapter MITS-DU"
             res.append(doc)
         if res:
             return sorted(res, key=lambda x: x.get("id", 0))
     except Exception as e:
         logger.exception("MongoDB mentors query failed:")
+    
+    return STATIC_MENTORS
     return STATIC_MENTORS
 
 @router.get("/committees")

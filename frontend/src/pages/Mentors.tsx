@@ -8,10 +8,9 @@ import { DecryptedText } from "@/components/animations/DecryptedText"
 import { ScrollReveal } from "@/components/animations/ScrollReveal"
 import manjreeImg from "@/assets/mentors/manjree-pandit.jpg"
 import vishalImg from "@/assets/mentors/vishal-chaudhary.jpg"
+import { mentors as staticMentors } from "@/data/siteData"
 
 export default function Mentors() {
-  const [mentors, setMentors] = useState<any[]>([])
-
   const resolveMentorImage = (m: any) => {
     if (m.image && (m.image.startsWith("http://") || m.image.startsWith("https://") || m.image.startsWith("data:"))) {
       return m.image
@@ -21,6 +20,13 @@ export default function Mentors() {
     if (name.includes("vishal")) return vishalImg
     return m.id === 1 ? manjreeImg : vishalImg
   }
+
+  const [mentors, setMentors] = useState<any[]>(() =>
+    staticMentors.map((m) => ({
+      ...m,
+      image: resolveMentorImage(m)
+    }))
+  )
 
   useEffect(() => {
     // Dynamic fetch from MongoDB Atlas via FastAPI

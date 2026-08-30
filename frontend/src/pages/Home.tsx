@@ -17,6 +17,8 @@ import event1 from "@/assets/Events/e-summit-iste.jpg"
 import event2 from "@/assets/Events/enigma-2025.webp"
 import event3 from "@/assets/Events/xcalibire-23.webp"
 
+import { mentors as staticMentors } from "@/data/siteData"
+
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [heroItems, setHeroItems] = useState<Array<{ image: string; text: string }>>([
@@ -30,7 +32,7 @@ export default function Home() {
     { image: event2, text: "Hackathon" }
   ])
   const [homeEvents, setHomeEvents] = useState<any[]>([])
-  const [homeMentors, setHomeMentors] = useState<any[]>([])
+  const [homeMentors, setHomeMentors] = useState<any[]>(staticMentors)
   const [loadingEvents, setLoadingEvents] = useState(true)
 
   useEffect(() => {

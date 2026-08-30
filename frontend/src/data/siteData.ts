@@ -9,7 +9,7 @@ export const mentors = [
   {
     id: 1,
     name: "Dr. Manjree Pandit",
-    designation: "Pro Vice-Chancellor, Faculty of Engineering & Technology & Chairperson, ISTE Chapter MITS-DU",
+    designation: "Pro-Vice-Chancellor, MITS Deemed University & Chairperson, ISTE Chapter MITS-DU",
     description: `Dr. Manjree Pandit provides visionary leadership to ISTE MITS, ensuring that the society aligns with professional standards and industry expectations. Under her Guidance, ISTE continues to thrive.`,
     longDescription: `Dr. Manjree Pandit provides visionary leadership to ISTE MITS, ensuring that the society aligns with professional standards and industry expectations.
 
