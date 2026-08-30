@@ -35,7 +35,7 @@ export default function MembershipPopup() {
   }, [])
 
   useEffect(() => {
-    // Do not display on admin or login routes
+    // Ensure modal is closed on admin or login routes
     const isExcludedRoute =
       location.pathname.startsWith("/admin") ||
       location.pathname.startsWith("/patidar/admin") ||
@@ -43,22 +43,10 @@ export default function MembershipPopup() {
 
     if (isExcludedRoute) {
       setIsOpen(false)
-      return
-    }
-
-    // Check session storage
-    const isDismissed = sessionStorage.getItem(POPUP_STORAGE_KEY)
-    if (!isDismissed) {
-      // Delay popup display slightly for smooth page entry
-      const timer = setTimeout(() => {
-        setIsOpen(true)
-      }, 600)
-      return () => clearTimeout(timer)
     }
   }, [location.pathname])
 
   const handleClose = () => {
-    sessionStorage.setItem(POPUP_STORAGE_KEY, "true")
     setIsOpen(false)
   }
 
