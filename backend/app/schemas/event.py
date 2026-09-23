@@ -20,6 +20,7 @@ class EventCreate(BaseModel):
     date: str
     venue: str
     bannerImage: Optional[str] = None
+    registrationUrl: Optional[str] = ""
     speakers: List[SpeakerSchema] = []
     customFieldsSchema: List[CustomFieldSchema] = []
 

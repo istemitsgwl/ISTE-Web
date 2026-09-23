@@ -65,6 +65,10 @@ export default function Events() {
   })
 
   const handleRegisterClick = (event: any) => {
+    if (event.registrationUrl && event.registrationUrl.trim()) {
+      window.open(event.registrationUrl.trim(), "_blank", "noopener,noreferrer")
+      return
+    }
     setSelectedEvent(event)
     setFormResponses({})
     setFormError("")

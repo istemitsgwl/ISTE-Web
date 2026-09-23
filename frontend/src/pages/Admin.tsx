@@ -75,6 +75,7 @@ export default function Admin() {
     desc: "",
     status: "upcoming",
     bannerImage: "",
+    registrationUrl: "",
   })
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
   const [eventBannerMode, setEventBannerMode] = useState<"file" | "url">("url")
@@ -493,6 +494,7 @@ export default function Admin() {
         status: newEvent.status,
         bannerImage: finalBannerUrl,
         image: finalBannerUrl,
+        registrationUrl: newEvent.registrationUrl.trim(),
         updatedAt: new Date().toISOString(),
         createdAt: editingEventId ? undefined : new Date().toISOString(),
       }
@@ -524,7 +526,7 @@ export default function Admin() {
       await refreshAdminData()
       alert(editingEventId ? "Event updated successfully!" : "Event created successfully!")
 
-      setNewEvent({ title: "", category: "Technical Fest", date: "", venue: "", desc: "", status: "upcoming", bannerImage: "" })
+      setNewEvent({ title: "", category: "Technical Fest", date: "", venue: "", desc: "", status: "upcoming", bannerImage: "", registrationUrl: "" })
       setEditingEventId(null)
       setEventBannerFile(null)
     } catch (err: any) {
@@ -545,6 +547,7 @@ export default function Admin() {
       desc: evt.desc || "",
       status: evt.status || "upcoming",
       bannerImage: evt.bannerImage || evt.image || "",
+      registrationUrl: evt.registrationUrl || "",
     })
     setEventBannerMode("url")
     window.scrollTo({ top: 400, behavior: "smooth" })
@@ -1189,6 +1192,18 @@ export default function Admin() {
                             <option value="completed">Completed</option>
                           </select>
                         </div>
+                      </div>
+
+                      {/* Google Form / External Registration URL */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">Google Form / Registration Link (Optional)</label>
+                        <Input
+                          type="url"
+                          value={newEvent.registrationUrl}
+                          onChange={(e) => setNewEvent({ ...newEvent, registrationUrl: e.target.value })}
+                          placeholder="e.g. https://forms.google.com/... or https://linktr.ee/iste_mits_gwl"
+                          className="bg-background border-border/80 py-3 rounded-xl text-xs sm:text-sm"
+                        />
                       </div>
 
                       {/* Banner Image Mode Selector */}

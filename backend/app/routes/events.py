@@ -17,7 +17,7 @@ router = APIRouter(prefix="/events", tags=["Events & Free Registrations"])
 EVENT_UPDATABLE_FIELDS = {
     "title", "desc", "description", "category", "date", "eventDate", "venue",
     "bannerImage", "image", "speakers", "customFieldsSchema", "status",
-    "maxParticipants", "registrationOpen", "updatedAt", "createdAt",
+    "maxParticipants", "registrationOpen", "updatedAt", "createdAt", "registrationUrl",
 }
 
 def sanitize_mongo_document(value, depth: int = 0, max_str: int = None):
