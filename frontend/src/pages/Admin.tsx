@@ -511,10 +511,14 @@ export default function Admin() {
       })
 
       if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Authentication session expired (401 Unauthorized). Please log out and log in again to save events.")
+        }
         if (res.status === 413) {
           throw new Error("Payload Too Large (413): Event banner image size is too large. Please select a smaller JPG or PNG image.")
         }
-        throw new Error("Failed to save event via REST API")
+        const errJson = await res.json().catch(() => ({}))
+        throw new Error(errJson.detail || "Failed to save event via REST API")
       }
 
       await refreshAdminData()

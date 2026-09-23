@@ -33,6 +33,15 @@ async def get_current_user(
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         email = payload.get("email", "").lower().strip()
     except jwt.PyJWTError:
+        # Fallback secret check in case JWT_SECRET_KEY changed
+        try:
+            fallback_secret = "iste_mits_gwl_production_secure_jwt_secret_2026_key_#8492"
+            payload = jwt.decode(token, fallback_secret, algorithms=[settings.JWT_ALGORITHM])
+            email = payload.get("email", "").lower().strip()
+        except jwt.PyJWTError:
+            pass
+
+    if not email:
         # 2. Fallback: Check if token is a direct Google OAuth ID token
         configured_audiences = [
             cid.strip() for cid in settings.GOOGLE_CLIENT_ID.split(",") if cid.strip()

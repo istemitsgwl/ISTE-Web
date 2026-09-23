@@ -123,10 +123,9 @@ async def create_event(
             event_data["cloudinaryPublicId"] = res["public_id"]
         except Exception as e:
             logger.error(f"Failed to upload event banner to Cloudinary: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to upload event banner."
-            )
+            event_data["bannerImage"] = banner_url
+            event_data["image"] = banner_url
+            event_data["cloudinaryPublicId"] = ""
             
     try:
         await db.events.insert_one(event_data)
@@ -169,10 +168,9 @@ async def update_event(
             payload["cloudinaryPublicId"] = res["public_id"]
         except Exception as e:
             logger.error(f"Failed to upload event banner to Cloudinary during update: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to upload event banner."
-            )
+            payload["bannerImage"] = banner_url
+            payload["image"] = banner_url
+            payload["cloudinaryPublicId"] = ""
             
     await db.events.update_one(query_filter, {"$set": payload})
     updated = await db.events.find_one(query_filter)
