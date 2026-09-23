@@ -407,7 +407,7 @@ export default function Home() {
                 <div className="p-5 flex flex-col flex-1">
                   <span className="text-[10px] text-primary font-extrabold uppercase tracking-widest mb-2 block">{event.date}</span>
                   <h3 className="text-base font-extrabold text-foreground mb-2 line-clamp-1 font-serif">{event.title}</h3>
-                  <p className="text-muted-foreground text-xs leading-relaxed mb-6 flex-1 line-clamp-3 font-medium">
+                  <p className="text-muted-foreground text-xs leading-relaxed mb-6 flex-1 line-clamp-3 font-medium whitespace-pre-line">
                     {event.desc}
                   </p>
                   <Link

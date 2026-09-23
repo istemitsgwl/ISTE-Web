@@ -252,7 +252,7 @@ export default function Events() {
                         {event.title}
                       </h3>
 
-                      <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mb-6 flex-1 font-medium">
+                      <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mb-6 flex-1 font-medium whitespace-pre-line">
                         {event.desc}
                       </p>
 
@@ -313,7 +313,7 @@ export default function Events() {
                     {selectedEvent.status}
                   </span>
                 </DialogTitle>
-                <DialogDescription className="text-muted-foreground text-xs sm:text-sm mt-2 font-medium leading-relaxed">
+                <DialogDescription className="text-muted-foreground text-xs sm:text-sm mt-2 font-medium leading-relaxed whitespace-pre-line">
                   {selectedEvent.desc}
                 </DialogDescription>
               </DialogHeader>
